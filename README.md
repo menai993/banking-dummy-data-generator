@@ -241,14 +241,14 @@ Edit **import_to_mssql.py**:
 
 ```python
 CONFIG = {
-        "server": "localhost",              # Your SQL Server
-        "database": "transactionaldb",         # Your database name
-        "username": "pytonusr",         # SQL Server login
-        "password": "pytonusr",         # SQL Server password
-        "data_directory": "output",         # Directory with CSV files
-        "enable_quality_tracking": True,
-        "create_views": True,               # Create database views
-        "batch_size": 1000                  # Rows per batch insert
+        "server": "localhost",                  # Your SQL Server
+        "database": "YourDatabase",          # Your database name
+        "username": "YourUsername",                 # SQL Server login
+        "password": "YourPassword",                 # SQL Server password
+        "data_directory": "output",             # Directory with CSV files
+        "enable_quality_tracking": True,        # Quality tracking represented in MSSQL
+        "create_views": True,                   # Create database views
+        "batch_size": 1000                      # Rows per batch insert
     }
 ```
 
