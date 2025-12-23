@@ -73,13 +73,8 @@ class TransactionGenerator:
     def generate_invalid_date(self):
         """Generate invalid date"""
         invalid_dates = [
-            "2025-13-01",  # Invalid month
-            "2025-02-30",  # Invalid day
-            "0000-00-00",  # All zeros
             "9999-12-31",  # Far future
             "1800-01-01",  # Far past
-            "2025/01/01",  # Wrong format
-            "01-JAN-2025",  # Wrong format
             ""  # Empty
         ]
         return random.choice(invalid_dates)
@@ -89,8 +84,12 @@ class TransactionGenerator:
         bad_data_type = BadDataGenerator.get_bad_data_type()
         
         if bad_data_type == "missing_data":
-            fields_to_corrupt = random.sample(["amount", "description", "status", "transaction_date"], k=random.randint(1, 3))
-            return BadDataGenerator.generate_missing_data(transaction, fields_to_corrupt)
+            fields_to_corrupt = random.sample(["amount", "description", "status", "transaction_date", "transaction_time"], k=random.randint(1, 3))
+            for field in fields_to_corrupt:
+                if field in transaction:
+                    transaction[field] = None
+            transaction['is_bad_data'] = True
+            transaction['bad_data_type'] = 'missing_data'
         
         elif bad_data_type == "invalid_format":
             if random.choice([True, False]):
@@ -111,7 +110,7 @@ class TransactionGenerator:
             else:
                 # Invalid amount
                 transaction["amount"] = self.generate_amount(
-                    transaction.get("account_type", "Checking"),
+                    "Checking",  # Default account type
                     transaction["transaction_type"],
                     invalid=True
                 )
@@ -128,9 +127,33 @@ class TransactionGenerator:
         
         elif bad_data_type == "malformed_data":
             field = random.choice(["description", "transaction_type", "status"])
-            return BadDataGenerator.generate_malformed_data(transaction, field)
+            if field in transaction and transaction[field] is not None:
+                sql_injection_patterns = [
+                    "' OR '1'='1",
+                    "'; DROP TABLE transactions; --",
+                    "<script>alert('xss')</script>",
+                    "../../../etc/passwd",
+                    "null\x00"
+                ]
+                pattern = random.choice(sql_injection_patterns)
+                transaction[field] = f"{transaction[field]}{pattern}"
+            transaction["is_bad_data"] = True
+            transaction["bad_data_type"] = "malformed_data"
         
         return transaction
+    
+    def _safe_sort_key(self, transaction):
+        """Safe sorting key that handles None values"""
+        date = transaction.get("transaction_date")
+        time = transaction.get("transaction_time")
+        
+        # Handle None values by putting them at the end
+        if date is None:
+            date = "9999-12-31"  # Far future date
+        if time is None:
+            time = "23:59:59"    # End of day
+        
+        return (date, time)
     
     def generate(self, transactions_per_account_min=5, transactions_per_account_max=50):
         """Generate transactions for accounts with bad data"""
@@ -138,18 +161,27 @@ class TransactionGenerator:
         bad_transaction_count = 0
         
         for account in self.accounts:
-            num_transactions = random.randint(transactions_per_account_min, transactions_per_account_max)
-            account_cards = [card for card in self.cards if card.get("account_id") == account["account_id"]]
-            
-            for i in range(num_transactions):
-                # Generate transaction date
+            # Skip if account has invalid opened_date
+            try:
                 opened_date = datetime.strptime(account["opened_date"], "%Y-%m-%d")
                 days_since_opened = (datetime.now() - opened_date).days
                 
                 if days_since_opened <= 0:
                     continue
+            except (ValueError, KeyError):
+                # Invalid date format or missing field
+                continue
+            
+            num_transactions = random.randint(transactions_per_account_min, transactions_per_account_max)
+            account_cards = [card for card in self.cards if card.get("account_id") == account["account_id"]]
+            
+            for i in range(num_transactions):
+                # Generate transaction date within account lifespan
+                days_offset = random.randint(0, days_since_opened)
+                transaction_date = opened_date + timedelta(days=days_offset)
                 
-                transaction_date = opened_date + timedelta(days=random.randint(0, days_since_opened))
+                transaction_date_str = transaction_date.strftime("%Y-%m-%d")
+                transaction_time_str = transaction_date.strftime("%H:%M:%S")
                 
                 # Select transaction type
                 if account_cards:
@@ -174,13 +206,13 @@ class TransactionGenerator:
                     "account_id": account["account_id"],
                     "card_id": card_id,
                     "transaction_type": transaction_type,
-                    "amount": self.generate_amount(account["account_type"], transaction_type),
-                    "currency": account["currency"],
-                    "transaction_date": transaction_date.strftime("%Y-%m-%d"),
-                    "transaction_time": transaction_date.strftime("%H:%M:%S"),
+                    "amount": self.generate_amount(account.get("account_type", "Checking"), transaction_type),
+                    "currency": account.get("currency", "USD"),
+                    "transaction_date": transaction_date_str,
+                    "transaction_time": transaction_time_str,
                     "description": self.generate_description(transaction_type),
                     "status": random.choices(TRANSACTION_STATUS, weights=[0.9, 0.05, 0.03, 0.02])[0],
-                    "created_at": transaction_date.strftime("%Y-%m-%d %H:%M:%S")
+                    "created_at": f"{transaction_date_str} {transaction_time_str}"
                 }
                 
                 # Introduce bad data
@@ -190,8 +222,8 @@ class TransactionGenerator:
                 
                 self.transactions.append(transaction)
         
-        # Sort transactions by date
-        self.transactions.sort(key=lambda x: (x["transaction_date"], x["transaction_time"]))
+        # Sort transactions by date and time, safely handling None values
+        self.transactions.sort(key=self._safe_sort_key)
         
         print(f"Generated {len(self.transactions)} transactions ({bad_transaction_count} with bad data)")
         return self.transactions

@@ -1,7 +1,8 @@
 import random
-from datetime import datetime
+from datetime import datetime, timedelta  # IMPORTANT: Add timedelta here
 from constants.banking_products import MERCHANT_CATEGORIES
 from constants.addresses import CITIES
+from utils.helpers import BadDataGenerator
 
 class MerchantGenerator:
     def __init__(self, num_merchants=500, bad_data_percentage=0.0):
@@ -58,14 +59,17 @@ class MerchantGenerator:
     
     def introduce_bad_data_merchant(self, merchant):
         """Introduce bad data into merchant record"""
-        from utils.helpers import BadDataGenerator
-        
         if BadDataGenerator.should_generate_bad_data(self.bad_data_percentage):
             bad_data_type = BadDataGenerator.get_bad_data_type()
             
             if bad_data_type == "missing_data":
                 fields = ["mcc_code", "phone", "email", "category"]
-                return BadDataGenerator.generate_missing_data(merchant, random.sample(fields, 2))
+                fields_to_corrupt = random.sample(fields, min(2, len(fields)))
+                for field in fields_to_corrupt:
+                    if field in merchant:
+                        merchant[field] = None
+                merchant['is_bad_data'] = True
+                merchant['bad_data_type'] = 'missing_data'
             
             elif bad_data_type == "invalid_format":
                 merchant["mcc_code"] = "ABCD"  # Invalid MCC
@@ -77,6 +81,20 @@ class MerchantGenerator:
                 merchant["mcc_code"] = "0000"
                 merchant["is_bad_data"] = True
                 merchant["bad_data_type"] = "inconsistent_data"
+            
+            elif bad_data_type == "malformed_data":
+                field = random.choice(["merchant_name", "email", "website"])
+                if field in merchant and merchant[field] is not None:
+                    sql_injection_patterns = [
+                        "' OR '1'='1",
+                        "'; DROP TABLE merchants; --",
+                        "<script>alert('xss')</script>",
+                        "../../../etc/passwd"
+                    ]
+                    pattern = random.choice(sql_injection_patterns)
+                    merchant[field] = f"{merchant[field]}{pattern}"
+                merchant["is_bad_data"] = True
+                merchant["bad_data_type"] = "malformed_data"
         
         return merchant
     
@@ -113,4 +131,4 @@ class MerchantGenerator:
             self.merchants.append(merchant)
         
         print(f"Generated {len(self.merchants)} merchants ({bad_merchant_count} with bad data)")
-        return self.merchments
+        return self.merchants

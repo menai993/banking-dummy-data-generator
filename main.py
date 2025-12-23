@@ -9,6 +9,13 @@ from generators.customer_generator import CustomerGenerator
 from generators.account_generator import AccountGenerator
 from generators.card_generator import CardGenerator
 from generators.transaction_generator import TransactionGenerator
+from generators.branch_generator import BranchGenerator
+from generators.employee_generator import EmployeeGenerator
+from generators.loan_generator import LoanGenerator
+from generators.merchant_generator import MerchantGenerator
+from generators.audit_log_generator import AuditLogGenerator
+from generators.exchange_rate_generator import ExchangeRateGenerator
+
 from utils.helpers import DataExporter
 import config
 

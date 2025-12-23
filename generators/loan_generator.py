@@ -59,38 +59,98 @@ class LoanGenerator:
         return round(max(0.02, base_rate), 4)  # Minimum 2%
     
     def calculate_monthly_payment(self, principal, annual_rate, months):
-        """Calculate monthly payment using amortization formula"""
-        monthly_rate = annual_rate / 12
-        if monthly_rate == 0:
-            return principal / months
-        
-        payment = principal * (monthly_rate * (1 + monthly_rate) ** months) / ((1 + monthly_rate) ** months - 1)
-        return round(payment, 2)
+        """Calculate monthly payment using amortization formula with error handling"""
+        try:
+            # Convert to float if needed
+            principal = float(principal)
+            annual_rate = float(annual_rate)
+            months = int(months)
+            
+            # Handle edge cases
+            if months <= 0:
+                months = 12
+            if principal <= 0:
+                return 0.00
+            if annual_rate <= 0:
+                return round(principal / months, 2)
+            
+            monthly_rate = annual_rate / 12
+            
+            # Handle negative or extreme rates
+            if monthly_rate <= -1:  # Avoid division by zero
+                monthly_rate = -0.99
+            
+            payment = principal * (monthly_rate * (1 + monthly_rate) ** months) / ((1 + monthly_rate) ** months - 1)
+            return round(payment, 2)
+        except (ValueError, TypeError, ZeroDivisionError):
+            # Fallback to simple calculation
+            return round(float(principal) / max(1, int(months)), 2)
     
     def generate_loan_schedule(self, loan):
-        """Generate loan payment schedule"""
+        """Generate loan payment schedule with robust error handling"""
         payments = []
-        principal = loan["loan_amount"]
-        monthly_rate = loan["interest_rate"] / 12
-        monthly_payment = loan["monthly_payment"]
-        remaining_balance = principal
-        payment_date = datetime.strptime(loan["start_date"], "%Y-%m-%d")
         
-        for payment_num in range(1, loan["term_months"] + 1):
-            interest_amount = round(remaining_balance * monthly_rate, 2)
-            principal_amount = round(min(monthly_payment - interest_amount, remaining_balance), 2)
-            
-            # Adjust last payment
-            if payment_num == loan["term_months"]:
-                principal_amount = round(remaining_balance, 2)
-                monthly_payment = principal_amount + interest_amount
-            
-            remaining_balance = round(max(0, remaining_balance - principal_amount), 2)
+        # SAFELY extract and convert values with error handling
+        try:
+            principal = float(loan["loan_amount"])
+        except (ValueError, TypeError):
+            principal = 10000.0  # Default if invalid
+        
+        try:
+            interest_rate = float(loan["interest_rate"])
+        except (ValueError, TypeError):
+            interest_rate = 0.05  # Default 5% if invalid
+        
+        try:
+            term_months = int(loan["term_months"])
+        except (ValueError, TypeError):
+            term_months = 12  # Default 12 months if invalid
+        
+        # Ensure term_months is positive
+        if term_months <= 0:
+            term_months = 12
+        
+        # Get or calculate monthly payment
+        monthly_payment = loan.get("monthly_payment")
+        if monthly_payment is None:
+            try:
+                monthly_payment = self.calculate_monthly_payment(principal, interest_rate, term_months)
+            except:
+                monthly_payment = round(principal / term_months, 2)  # Simple division as fallback
+        
+        # Calculate monthly rate
+        monthly_rate = interest_rate / 12
+        
+        # Handle start date
+        try:
+            payment_date = datetime.strptime(loan["start_date"], "%Y-%m-%d")
+        except (ValueError, KeyError):
+            # Default to current date if invalid
+            payment_date = datetime.now()
+        
+        remaining_balance = principal
+        
+        for payment_num in range(1, term_months + 1):
+            try:
+                interest_amount = round(remaining_balance * monthly_rate, 2)
+                principal_amount = round(min(monthly_payment - interest_amount, remaining_balance), 2)
+                
+                # Adjust last payment
+                if payment_num == term_months:
+                    principal_amount = round(remaining_balance, 2)
+                    monthly_payment = principal_amount + interest_amount
+                
+                remaining_balance = round(max(0, remaining_balance - principal_amount), 2)
+            except:
+                # If calculation fails, use simple values
+                interest_amount = 0.00
+                principal_amount = round(monthly_payment, 2)
+                remaining_balance = max(0, remaining_balance - principal_amount)
             
             payment = {
-                "payment_id": f"PAY{loan['loan_id'][2:]}{payment_num:03d}",
-                "loan_id": loan["loan_id"],
-                "customer_id": loan["customer_id"],
+                "payment_id": f"PAY{loan.get('loan_id', 'LN0000000')[2:]}{payment_num:03d}",
+                "loan_id": loan.get("loan_id", "UNKNOWN"),
+                "customer_id": loan.get("customer_id", "UNKNOWN"),
                 "payment_number": payment_num,
                 "payment_date": payment_date.strftime("%Y-%m-%d"),
                 "due_date": payment_date.strftime("%Y-%m-%d"),
@@ -116,7 +176,12 @@ class LoanGenerator:
             
             if bad_data_type == "missing_data":
                 fields = ["interest_rate", "term_months", "monthly_payment", "loan_type"]
-                return BadDataGenerator.generate_missing_data(loan, random.sample(fields, 2))
+                fields_to_corrupt = random.sample(fields, min(2, len(fields)))
+                for field in fields_to_corrupt:
+                    if field in loan:
+                        loan[field] = None
+                loan["is_bad_data"] = True
+                loan["bad_data_type"] = "missing_data"
             
             elif bad_data_type == "out_of_range":
                 loan["interest_rate"] = random.uniform(-0.1, -0.01)  # Negative interest
@@ -125,8 +190,9 @@ class LoanGenerator:
             
             elif bad_data_type == "inconsistent_data":
                 # Loan amount vs monthly payment inconsistency
-                if loan["monthly_payment"] > loan["loan_amount"]:
-                    loan["monthly_payment"] = loan["loan_amount"] * 0.01  # Too small
+                if "monthly_payment" in loan and "loan_amount" in loan:
+                    if loan["monthly_payment"] > loan["loan_amount"]:
+                        loan["monthly_payment"] = loan["loan_amount"] * 0.01  # Too small
                 loan["is_bad_data"] = True
                 loan["bad_data_type"] = "inconsistent_data"
             
@@ -134,6 +200,19 @@ class LoanGenerator:
                 loan["interest_rate"] = "invalid"
                 loan["is_bad_data"] = True
                 loan["bad_data_type"] = "invalid_format"
+            
+            elif bad_data_type == "malformed_data":
+                field = random.choice(["loan_type", "status"])
+                if field in loan and loan[field] is not None:
+                    sql_injection_patterns = [
+                        "' OR '1'='1",
+                        "'; DROP TABLE loans; --",
+                        "<script>alert('xss')</script>"
+                    ]
+                    pattern = random.choice(sql_injection_patterns)
+                    loan[field] = f"{loan[field]}{pattern}"
+                loan["is_bad_data"] = True
+                loan["bad_data_type"] = "malformed_data"
         
         return loan
     
@@ -146,10 +225,16 @@ class LoanGenerator:
             
             if bad_data_type == "missing_data":
                 fields = ["amount_due", "principal_amount", "interest_amount"]
-                return BadDataGenerator.generate_missing_data(payment, random.sample(fields, 2))
+                fields_to_corrupt = random.sample(fields, min(2, len(fields)))
+                for field in fields_to_corrupt:
+                    if field in payment:
+                        payment[field] = None
+                payment["is_bad_data"] = True
+                payment["bad_data_type"] = "missing_data"
             
             elif bad_data_type == "out_of_range":
-                payment["total_paid"] = payment["amount_due"] * 2  # Overpayment
+                if "amount_due" in payment:
+                    payment["total_paid"] = payment["amount_due"] * 2  # Overpayment
                 payment["is_bad_data"] = True
                 payment["bad_data_type"] = "out_of_range"
             
@@ -158,6 +243,12 @@ class LoanGenerator:
                 payment["status"] = "Late"
                 payment["is_bad_data"] = True
                 payment["bad_data_type"] = "inconsistent_data"
+            
+            elif bad_data_type == "invalid_format":
+                if "payment_date" in payment:
+                    payment["payment_date"] = "2025-13-01"  # Invalid date
+                payment["is_bad_data"] = True
+                payment["bad_data_type"] = "invalid_format"
         
         return payment
     
@@ -211,30 +302,35 @@ class LoanGenerator:
                 
                 self.loans.append(loan)
                 
-                # Generate payment schedule
-                payments = self.generate_loan_schedule(loan)
-                
-                # Mark some payments as paid, late, or missed
-                for payment in payments:
-                    # Randomly update payment status
-                    rand = random.random()
-                    if rand < 0.7:  # 70% paid on time
-                        payment["total_paid"] = payment["amount_due"]
-                        payment["status"] = "Paid"
-                    elif rand < 0.85:  # 15% late
-                        payment["total_paid"] = payment["amount_due"] * random.uniform(0.5, 0.95)
-                        payment["status"] = "Late"
-                    elif rand < 0.95:  # 10% missed
-                        payment["total_paid"] = 0.00
-                        payment["status"] = "Missed"
-                    else:  # 5% partially paid
-                        payment["total_paid"] = payment["amount_due"] * random.uniform(0.1, 0.5)
-                        payment["status"] = "Partial"
-                    
-                    # Introduce bad data in payments
-                    payment = self.introduce_bad_data_payment(payment)
-                    
-                    self.loan_payments.append(payment)
+                # Generate payment schedule (skip if loan is too bad)
+                try:
+                    if loan.get("loan_amount") and loan.get("interest_rate") and loan.get("term_months"):
+                        payments = self.generate_loan_schedule(loan)
+                        
+                        # Mark some payments as paid, late, or missed
+                        for payment in payments:
+                            # Randomly update payment status
+                            rand = random.random()
+                            if rand < 0.7:  # 70% paid on time
+                                payment["total_paid"] = payment["amount_due"]
+                                payment["status"] = "Paid"
+                            elif rand < 0.85:  # 15% late
+                                payment["total_paid"] = payment["amount_due"] * random.uniform(0.5, 0.95)
+                                payment["status"] = "Late"
+                            elif rand < 0.95:  # 10% missed
+                                payment["total_paid"] = 0.00
+                                payment["status"] = "Missed"
+                            else:  # 5% partially paid
+                                payment["total_paid"] = payment["amount_due"] * random.uniform(0.1, 0.5)
+                                payment["status"] = "Partial"
+                            
+                            # Introduce bad data in payments
+                            payment = self.introduce_bad_data_payment(payment)
+                            
+                            self.loan_payments.append(payment)
+                except Exception as e:
+                    print(f"Warning: Could not generate schedule for loan {loan.get('loan_id', 'UNKNOWN')}: {e}")
+                    continue
         
         print(f"Generated {len(self.loans)} loans ({bad_loan_count} with bad data)")
         print(f"Generated {len(self.loan_payments)} loan payments")

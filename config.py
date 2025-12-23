@@ -4,19 +4,22 @@ CONFIG = {
     "num_branches": 50,
     "num_employees": 200,
     "num_merchants": 500,
+    
     "accounts_per_customer_min": 1,
     "accounts_per_customer_max": 3,
     "cards_per_customer_min": 0,
     "cards_per_customer_max": 2,
     "transactions_per_account_min": 5,
     "transactions_per_account_max": 50,
-    "output_formats": ["csv", "sql", "excel"],  # Options: csv, sql, excel
-    "output_directory": "output",
+    
     "exchange_rate_days": 365,
     "audit_logs_per_user_min": 5,
     "audit_logs_per_user_max": 50,
     "loans_per_customer_min": 0,
     "loans_per_customer_max": 2,
+    
+    "output_formats": ["csv", "sql"],  # Options: csv, sql, -- soon excel will be available
+    "output_directory": "output",
     
     # Bad data configuration
     "bad_data_percentage": {

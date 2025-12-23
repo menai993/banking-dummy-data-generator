@@ -11,7 +11,7 @@ This project generates **realistic, relational banking datasets** with **control
 - 🏦 End-to-end **banking domain simulation**
 - 🔗 Realistic **table relationships**
 - ⚠️ Configurable **bad data injection (5 error types)**
-- 📤 Export to **CSV, SQL, Excel**
+- 📤 Export to **CSV, SQL**
 - 🗄️ Direct **MSSQL import with quality logging**
 - 📊 Automatic **bad data analytics report**
 - 🧱 Modular & **easily extensible architecture**
@@ -59,8 +59,8 @@ dummy_banking_data/
 ### 1️⃣ Installation
 
 ```bash
-git clone <repository-url>
-cd dummy_banking_data
+git clone https://github.com/menai993/banking-dummy-data-generator.git
+cd banking-dummy-data-generator
 pip install -r requirements.txt
 python --version   # Python 3.7+
 ```
@@ -94,7 +94,7 @@ CONFIG = {
         "loans": 0.15
     },
 
-    "output_formats": ["csv", "sql", "excel"]
+    "output_formats": ["csv", "sql"]
 }
 ```
 
@@ -204,11 +204,6 @@ output/sql/
 └── ...
 ```
 
-### Excel
-```
-output/banking_data.xlsx
-```
-
 ---
 
 ## 🗄️ MSSQL Import
@@ -224,9 +219,9 @@ Edit **import_to_mssql.py**:
 ```python
 CONFIG = {
     "server": "localhost",
-    "database": "BankingDB",
-    "username": "your_username",
-    "password": "your_password",
+    "database": "YourDatabase",
+    "username": "YourUsername",
+    "password": "YourPassword",
     "data_directory": "output"
 }
 ```

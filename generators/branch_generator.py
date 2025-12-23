@@ -1,7 +1,8 @@
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from constants.addresses import CITIES, STATES
 from constants.banking_products import BRANCH_TYPES, DEPARTMENT_TYPES
+from utils.helpers import BadDataGenerator
 
 class BranchGenerator:
     def __init__(self, num_branches=50, bad_data_percentage=0.0):
@@ -39,14 +40,16 @@ class BranchGenerator:
     
     def introduce_bad_data_branch(self, branch):
         """Introduce bad data into branch record"""
-        from utils.helpers import BadDataGenerator
-        
         if BadDataGenerator.should_generate_bad_data(self.bad_data_percentage):
             bad_data_type = BadDataGenerator.get_bad_data_type()
             
             if bad_data_type == "missing_data":
-                fields = ["manager_name", "phone", "email", "branch_type"]
-                return BadDataGenerator.generate_missing_data(branch, random.sample(fields, 2))
+                fields_to_corrupt = random.sample(["manager_name", "phone", "email", "branch_type"], k=random.randint(1, 2))
+                for field in fields_to_corrupt:
+                    if field in branch:
+                        branch[field] = None
+                branch['is_bad_data'] = True
+                branch['bad_data_type'] = 'missing_data'
             
             elif bad_data_type == "invalid_format":
                 branch["phone"] = "invalid-phone"
@@ -58,12 +61,13 @@ class BranchGenerator:
                 branch["state"] = "XX"
                 branch["is_bad_data"] = True
                 branch["bad_data_type"] = "inconsistent_data"
-            
+        
         return branch
     
     def generate(self):
         """Generate branch data"""
         self.branches = []
+        bad_branch_count = 0  # INITIALIZE THE COUNTER
         
         for _ in range(self.num_branches):
             city = random.choice(CITIES)
@@ -82,12 +86,15 @@ class BranchGenerator:
                 "phone": self.generate_phone(),
                 "email": self.generate_email(self.generate_branch_code(city)),
                 "manager_name": self.generate_manager_name(),
-                "opening_date": (datetime.now() - random.randint(365, 365*20)).strftime("%Y-%m-%d"),
+                "opening_date": (datetime.now() - timedelta(days=random.randint(365, 365*20))).strftime("%Y-%m-%d"),
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             
             branch = self.introduce_bad_data_branch(branch)
+            if branch.get('is_bad_data'):
+                bad_branch_count += 1
+            
             self.branches.append(branch)
         
-        print(f"Generated {len(self.branches)} branches")
+        print(f"Generated {len(self.branches)} branches ({bad_branch_count} with bad data)")
         return self.branches
