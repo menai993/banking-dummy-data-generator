@@ -320,6 +320,8 @@ class MSSQLImporter:
             print(f"❌ Database connection/creation error: {e}")
             return False
     
+
+    
     def import_csv_with_quality_check(self, csv_file, table_name, batch_size=1000):
         """
         Import data from CSV file with data quality logging
@@ -349,7 +351,7 @@ class MSSQLImporter:
             cursor = conn.cursor()
             
             # Prepare INSERT statement
-            columns = [col for col in df.columns if col not in ['Unnamed: 0', 'is_bad_data', 'bad_data_type']]
+            columns = [col for col in df.columns if col != 'Unnamed: 0']
             columns_str = ', '.join(columns)
             placeholders = ', '.join(['?' for _ in columns])
             insert_stmt = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
@@ -870,14 +872,16 @@ def main():
     # Configuration - UPDATE THESE FOR YOUR ENVIRONMENT
     CONFIG = {
         "server": "localhost",              # Your SQL Server
-        "database": "YourDatabase",         # Your database name
-        "username": "YourUsername",         # SQL Server login
-        "password": "YourPassword",         # SQL Server password
+        "database": "transactionaldb",         # Your database name
+        "username": "pytonusr",         # SQL Server login
+        "password": "pytonusr",         # SQL Server password
         "data_directory": "output",         # Directory with CSV files
+        "enable_quality_tracking": True,
         "create_views": True,               # Create database views
         "batch_size": 1000                  # Rows per batch insert
     }
     
+
     # Display current configuration
     print("\nCURRENT CONFIGURATION:")
     print("-" * 40)
