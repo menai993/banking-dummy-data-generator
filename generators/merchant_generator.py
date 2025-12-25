@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta  # IMPORTANT: Add timedelta here
+from datetime import datetime, timedelta  
 from constants.banking_products import MERCHANT_CATEGORIES
 from constants.addresses import CITIES
 from utils.helpers import BadDataGenerator

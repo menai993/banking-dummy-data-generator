@@ -148,7 +148,7 @@ class LoanGenerator:
                 remaining_balance = max(0, remaining_balance - principal_amount)
             
             payment = {
-                "payment_id": f"PAY{loan.get('loan_id', 'LN0000000')[2:]}{payment_num:03d}",
+                "payment_id": f"PAY{loan.get('loan_id', 'LN0000000')[2:]}{payment_num:03d}{loan.get('customer_id', 'UNKNOWN')[1:]}",
                 "loan_id": loan.get("loan_id", "UNKNOWN"),
                 "customer_id": loan.get("customer_id", "UNKNOWN"),
                 "payment_number": payment_num,

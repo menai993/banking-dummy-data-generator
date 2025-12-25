@@ -6,6 +6,14 @@ from datetime import datetime
 
 class DataExporter:
     @staticmethod
+    def log_to_txt(text, output_dir="output"):
+        os.makedirs(output_dir, exist_ok=True)
+        filepath = os.path.join(output_dir, "import_errors.txt")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(filepath, "a", encoding="utf-8") as f:
+            f.write(f"[{timestamp}] {text}\n\n")
+
+    @staticmethod
     def export_to_csv(data, filename, output_dir="output"):
         """Export data to CSV file with UTF-8 encoding"""
         os.makedirs(output_dir, exist_ok=True)

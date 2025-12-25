@@ -7,8 +7,11 @@ Supports all 12 tables from the banking data generator
 import pyodbc
 import pandas as pd
 import os
-import json
+import config
+import re
 from datetime import datetime
+from utils.helpers import DataExporter 
+
 
 class MSSQLImporter:
     def __init__(self, server, database, username, password):
@@ -85,8 +88,8 @@ class MSSQLImporter:
             CREATE TABLE accounts (
                 account_id VARCHAR(20) PRIMARY KEY,
                 customer_id VARCHAR(20) FOREIGN KEY REFERENCES customers(customer_id),
-                account_number VARCHAR(20) UNIQUE,
-                account_type VARCHAR(50),
+                account_number VARCHAR(20) UNIQUE, 
+                account_type VARCHAR(50), 
                 balance DECIMAL(15,2),
                 currency VARCHAR(3),
                 status VARCHAR(20),
@@ -152,8 +155,7 @@ class MSSQLImporter:
                 is_bad_data BIT DEFAULT 0,
                 bad_data_type VARCHAR(50)
             );
-            """,
-            
+            """,    
             "employees": """
             CREATE TABLE employees (
                 employee_id VARCHAR(20) PRIMARY KEY,
@@ -172,8 +174,7 @@ class MSSQLImporter:
                 is_bad_data BIT DEFAULT 0,
                 bad_data_type VARCHAR(50)
             );
-            """,
-            
+            """,        
             "loans": """
             CREATE TABLE loans (
                 loan_id VARCHAR(20) PRIMARY KEY,
@@ -193,8 +194,7 @@ class MSSQLImporter:
                 is_bad_data BIT DEFAULT 0,
                 bad_data_type VARCHAR(50)
             );
-            """,
-            
+            """,         
             "loan_payments": """
             CREATE TABLE loan_payments (
                 payment_id VARCHAR(20) PRIMARY KEY,
@@ -212,8 +212,7 @@ class MSSQLImporter:
                 is_bad_data BIT DEFAULT 0,
                 bad_data_type VARCHAR(50)
             );
-            """,
-            
+            """,          
             "merchants": """
             CREATE TABLE merchants (
                 merchant_id VARCHAR(20) PRIMARY KEY,
@@ -233,8 +232,7 @@ class MSSQLImporter:
                 is_bad_data BIT DEFAULT 0,
                 bad_data_type VARCHAR(50)
             );
-            """,
-            
+            """,         
             "audit_logs": """
             CREATE TABLE audit_logs (
                 audit_id VARCHAR(20) PRIMARY KEY,
@@ -253,8 +251,7 @@ class MSSQLImporter:
                 is_bad_data BIT DEFAULT 0,
                 bad_data_type VARCHAR(50)
             );
-            """,
-            
+            """,          
             "exchange_rates": """
             CREATE TABLE exchange_rates (
                 rate_id VARCHAR(50) PRIMARY KEY,
@@ -272,7 +269,77 @@ class MSSQLImporter:
                 bad_data_type VARCHAR(50)
             );
             """,
-            
+            "investment_accounts": """
+            CREATE TABLE investment_accounts (
+                investment_account_id BIGINT PRIMARY KEY, 
+                customer_id VARCHAR(20),
+                account_id VARCHAR(20) NOT NULL,                
+                investment_type VARCHAR(50),
+                risk_tolerance VARCHAR(20),
+                account_status VARCHAR(20),
+                investment_strategy VARCHAR(30),
+                primary_asset_class VARCHAR(30),
+                opening_date DATE,
+                current_balance DECIMAL(18,2),
+                total_deposits DECIMAL(18,2),
+                ytd_return_rate DECIMAL(5,4),
+                annual_return_rate DECIMAL(5,4),
+                management_fee_rate DECIMAL(5,4),
+                total_value DECIMAL(18,2),
+                is_managed_account BIT,
+                created_at DATETIME,
+                is_bad_data BIT DEFAULT 0,
+                bad_data_type VARCHAR(50),
+                FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+                FOREIGN KEY (account_id) REFERENCES accounts(account_id)
+            );
+            """,
+            "fraud_alerts": """
+            CREATE TABLE fraud_alerts (
+                alert_id BIGINT PRIMARY KEY,               -- Changed to BIGINT
+                transaction_id VARCHAR(20) NOT NULL,            
+                account_id VARCHAR(20) NOT NULL,                
+                customer_id VARCHAR(20),                       
+                alert_timestamp DATETIME,
+                detection_method VARCHAR(30),
+                fraud_reason VARCHAR(50),
+                fraud_type VARCHAR(30),
+                severity VARCHAR(20),
+                severity_score INT,
+                alert_status VARCHAR(30),
+                assigned_analyst_id VARCHAR(20),
+                resolution_date DATETIME,
+                financial_loss DECIMAL(18,2),
+                is_false_positive BIT,
+                created_at DATETIME,
+                is_bad_data BIT DEFAULT 0,
+                bad_data_type VARCHAR(50),
+                FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id),
+                FOREIGN KEY (account_id) REFERENCES accounts(account_id),
+                FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+            );
+            """,
+            "user_logins": """
+            CREATE TABLE user_logins (
+                login_id BIGINT PRIMARY KEY,               -- Changed to BIGINT
+                customer_id VARCHAR(20) NOT NULL,             
+                login_timestamp DATETIME,
+                ip_address VARCHAR(50),
+                device_type VARCHAR(50),
+                browser VARCHAR(30),
+                operating_system VARCHAR(30),
+                login_method VARCHAR(20),
+                login_status VARCHAR(20),
+                failure_reason VARCHAR(50),
+                session_duration_minutes INT,
+                geolocation VARCHAR(50),
+                is_vpn_used BIT,
+                created_at DATETIME,
+                is_bad_data BIT DEFAULT 0,
+                bad_data_type VARCHAR(50),
+                FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+            );
+            """,    
             "data_quality_log": """
             CREATE TABLE data_quality_log (
                 log_id INT IDENTITY(1,1) PRIMARY KEY,
@@ -286,8 +353,12 @@ class MSSQLImporter:
                 duration_seconds INT
             );
             """
+
         }
         
+        if any(value > 0 for value in config.CONFIG["bad_data_percentage"].values()):
+            for table_name, sql in create_statements.items():
+                create_statements[table_name] = re.sub(r'VARCHAR\s*\(\s*\d+\s*\)', 'VARCHAR(500)', sql, flags=re.IGNORECASE)
         try:
             conn = pyodbc.connect(self.connection_string)
             cursor = conn.cursor()
@@ -371,7 +442,7 @@ class MSSQLImporter:
                 batch_errors = 0
                 batch_success = 0
                 
-                for _, row in batch.iterrows():
+                for i, (_, row) in enumerate(batch.iterrows()):
                     try:
                         # Convert NaN to None and prepare values
                         row_values = []
@@ -386,8 +457,10 @@ class MSSQLImporter:
                         batch_success += 1
                     except Exception as e:
                         batch_errors += 1
+                        csv_line = start_idx + i + 2
+                        DataExporter.log_to_txt(f"|{csv_file}| CSV line {csv_line}: " + str(e),config.CONFIG["output_directory"])
                         if batch_errors <= 3:  # Show only first 3 errors per batch
-                            print(f"    Row error: {str(e)[:100]}")
+                            print(f"    Row error at CSV line {csv_line}: {str(e)[:100]}")                           
                         continue
                 
                 rows_imported += batch_success
@@ -460,12 +533,18 @@ class MSSQLImporter:
             # Level 4: Depend on accounts, cards, loans
             ("transactions.csv", "transactions"),
             ("loan_payments.csv", "loan_payments"),
+
+            # Level 5: Depend on transactions (for fraud alerts)
+            ("fraud_alerts.csv", "fraud_alerts"),  # NEW: Depends on transactions
             
-            # Level 5: Depend on branches
+            # Level 6: Depend on branches
             ("employees.csv", "employees"),
             
-            # Level 6: Depend on customers/employees
+            # Level 7: Depend on customers/employees
             ("audit_logs.csv", "audit_logs"),
+
+            # Level 8: Depend on customers only
+            ("user_logins.csv", "user_logins"),  # NEW: Depends on customers
         ]
         
         print("=" * 70)
@@ -872,11 +951,11 @@ def main():
     # Configuration - UPDATE THESE FOR YOUR ENVIRONMENT
     CONFIG = {
         "server": "localhost",              # Your SQL Server
-        "database": "transactionaldb",         # Your database name
-        "username": "pytonusr",         # SQL Server login
-        "password": "pytonusr",         # SQL Server password
+        "database": "YourDatabase",      # Your database name
+        "username": "YourUsername",             # SQL Server login
+        "password": "YourPassword",             # SQL Server password
         "data_directory": "output",         # Directory with CSV files
-        "enable_quality_tracking": True,
+        "enable_quality_tracking": True,    # Quality tracking enablement
         "create_views": True,               # Create database views
         "batch_size": 1000                  # Rows per batch insert
     }
@@ -945,6 +1024,7 @@ def main():
         print("  2. Connect to your database")
         print("  3. Run the provided analysis queries")
         print("  4. Check the 'data_quality_log' table for import stats")
+        print("  5. Check the 'import_errors.txt' file for import errors")
         print("\nGenerated files are in 'output/' directory")
         print("=" * 70)
         
