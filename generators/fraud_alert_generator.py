@@ -2,8 +2,7 @@
 import random
 from datetime import datetime, timedelta
 from constants.fraud_constants import (
-    FRAUD_REASONS, ALERT_STATUSES, SEVERITY_LEVELS,
-    DETECTION_METHODS, FRAUD_TYPES
+    FRAUD_REASONS, ALERT_STATUSES, DETECTION_METHODS, FRAUD_TYPES
 )
 from utils.helpers import BadDataGenerator  # Import at top level
 

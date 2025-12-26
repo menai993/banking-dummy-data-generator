@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from utils.helpers import BadDataGenerator
 from constants.login_constants import (
     DEVICE_TYPES, BROWSERS, OPERATING_SYSTEMS,
-    LOGIN_METHODS, FAILURE_REASONS, LOGIN_STATUS
+    LOGIN_METHODS, FAILURE_REASONS, 
 )
 
 class UserLoginGenerator:
