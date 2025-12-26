@@ -7,11 +7,13 @@ class AuditLogGenerator:
         self.bad_data_percentage = bad_data_percentage
         self.audit_logs = []
         
-    def generate_audit_id(self):
+    @staticmethod
+    def generate_audit_id():
         """Generate audit log ID"""
         return f"AUD{random.randint(100000000, 999999999)}"
     
-    def generate_action_types(self):
+    @staticmethod
+    def generate_action_types():
         """Generate different audit action types"""
         return [
             "LOGIN", "LOGOUT", "CREATE", "UPDATE", "DELETE", 
@@ -20,22 +22,26 @@ class AuditLogGenerator:
             "LOAN_APPLICATION", "CARD_ISSUE", "STATEMENT_GENERATE"
         ]
     
-    def generate_entity_types(self):
+    @staticmethod
+    def generate_entity_types():
         """Generate entity types for audit logs"""
         return [
             "CUSTOMER", "ACCOUNT", "TRANSACTION", "LOAN", "CARD",
             "EMPLOYEE", "BRANCH", "MERCHANT", "USER", "SYSTEM"
         ]
     
-    def generate_status_codes(self):
+    @staticmethod
+    def generate_status_codes():
         """Generate status codes"""
         return ["SUCCESS", "FAILURE", "PENDING", "ERROR", "WARNING"]
     
-    def generate_ip_address(self):
+    @staticmethod
+    def generate_ip_address():
         """Generate random IP address"""
         return f"{random.randint(1, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(1, 255)}"
     
-    def generate_user_agent(self):
+    @staticmethod
+    def generate_user_agent():
         """Generate random user agent"""
         user_agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",

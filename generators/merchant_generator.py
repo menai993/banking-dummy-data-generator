@@ -19,7 +19,8 @@ class MerchantGenerator:
                 self.merchant_ids.add(merchant_id)
                 return merchant_id
     
-    def generate_merchant_name(self, category):
+    @staticmethod
+    def generate_merchant_name(category):
         """Generate merchant name based on category"""
         prefixes = {
             "Retail": ["Best", "Super", "Mega", "Quality", "Prime"],
@@ -44,7 +45,8 @@ class MerchantGenerator:
         
         return f"{prefix} {suffix}"
     
-    def generate_mcc(self, category):
+    @staticmethod
+    def generate_mcc(category):
         """Generate Merchant Category Code"""
         mcc_codes = {
             "Retail": ["5411", "5311", "5331", "5399"],

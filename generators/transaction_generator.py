@@ -19,7 +19,8 @@ class TransactionGenerator:
                 self.transaction_ids.add(trans_id)
                 return trans_id
     
-    def generate_amount(self, account_type, transaction_type, invalid=False):
+    @staticmethod
+    def generate_amount(account_type, transaction_type, invalid=False):
         """Generate transaction amount"""
         if invalid:
             invalid_amounts = [
@@ -46,7 +47,8 @@ class TransactionGenerator:
         
         return round(base_amount, 2)
     
-    def generate_description(self, transaction_type, invalid=False):
+    @staticmethod
+    def generate_description(transaction_type, invalid=False):
         """Generate transaction description"""
         if invalid:
             invalid_descriptions = [
@@ -70,7 +72,8 @@ class TransactionGenerator:
         
         return random.choice(descriptions.get(transaction_type, ["Transaction"]))
     
-    def generate_invalid_date(self):
+    @staticmethod
+    def generate_invalid_date():
         """Generate invalid date"""
         invalid_dates = [
             "9999-12-31",  # Far future
@@ -142,7 +145,8 @@ class TransactionGenerator:
         
         return transaction
     
-    def _safe_sort_key(self, transaction):
+    @staticmethod
+    def _safe_sort_key(transaction):
         """Safe sorting key that handles None values"""
         date = transaction.get("transaction_date")
         time = transaction.get("transaction_time")

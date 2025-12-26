@@ -19,21 +19,25 @@ class BranchGenerator:
                 self.branch_ids.add(branch_id)
                 return branch_id
     
-    def generate_branch_code(self, city):
+    @staticmethod
+    def generate_branch_code(city):
         """Generate branch code based on city"""
         city_code = ''.join([c for c in city if c.isalpha()])[:3].upper()
         return f"{city_code}{random.randint(100, 999)}"
     
-    def generate_phone(self):
+    @staticmethod
+    def generate_phone():
         """Generate branch phone number"""
         return f"({random.randint(200, 999)}) {random.randint(200, 999)}-{random.randint(1000, 9999)}"
     
-    def generate_email(self, branch_code):
+    @staticmethod
+    def generate_email(branch_code):
         """Generate branch email"""
         domains = ["bank.com", "financial.com", "banking-services.com"]
         return f"branch.{branch_code.lower()}@{random.choice(domains)}"
     
-    def generate_manager_name(self):
+    @staticmethod
+    def generate_manager_name():
         """Generate branch manager name"""
         from constants.names import FIRST_NAMES, LAST_NAMES
         return f"{random.choice(FIRST_NAMES)} {random.choice(LAST_NAMES)}"

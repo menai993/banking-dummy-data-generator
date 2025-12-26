@@ -37,7 +37,8 @@ class AccountGenerator:
                 self.account_ids.add(acc_id)
                 return acc_id
     
-    def generate_balance(self, account_type, invalid=False):
+    @staticmethod
+    def generate_balance(account_type, invalid=False):
         """Generate balance"""
         if invalid:
             invalid_balances = [

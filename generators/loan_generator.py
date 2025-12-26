@@ -20,7 +20,8 @@ class LoanGenerator:
                 self.loan_ids.add(loan_id)
                 return loan_id
     
-    def generate_loan_amount(self, loan_type):
+    @staticmethod
+    def generate_loan_amount(loan_type):
         """Generate loan amount based on type"""
         if loan_type == "Personal Loan":
             return round(random.uniform(1000, 50000), 2)
@@ -33,7 +34,8 @@ class LoanGenerator:
         else:
             return round(random.uniform(5000, 250000), 2)
     
-    def generate_interest_rate(self, loan_type, credit_score):
+    @staticmethod
+    def generate_interest_rate(loan_type, credit_score):
         """Generate interest rate based on loan type and credit score"""
         base_rate = 0.05  # 5%
         
@@ -58,7 +60,8 @@ class LoanGenerator:
         
         return round(max(0.02, base_rate), 4)  # Minimum 2%
     
-    def calculate_monthly_payment(self, principal, annual_rate, months):
+    @staticmethod
+    def calculate_monthly_payment(principal, annual_rate, months):
         """Calculate monthly payment using amortization formula with error handling"""
         try:
             # Convert to float if needed
