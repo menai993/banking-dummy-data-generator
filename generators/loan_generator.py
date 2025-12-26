@@ -169,7 +169,6 @@ class LoanGenerator:
     
     def introduce_bad_data_loan(self, loan):
         """Introduce bad data into loan record"""
-        from utils.helpers import BadDataGenerator
         
         if BadDataGenerator.should_generate_bad_data(self.bad_data_percentage):
             bad_data_type = BadDataGenerator.get_bad_data_type()
@@ -218,7 +217,6 @@ class LoanGenerator:
     
     def introduce_bad_data_payment(self, payment):
         """Introduce bad data into payment record"""
-        from utils.helpers import BadDataGenerator
         
         if BadDataGenerator.should_generate_bad_data(self.bad_data_percentage * 0.5):
             bad_data_type = BadDataGenerator.get_bad_data_type()

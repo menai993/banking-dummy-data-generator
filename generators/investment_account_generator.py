@@ -17,7 +17,6 @@ class InvestmentAccountGenerator:
         
     def introduce_bad_data_investment(self, account):
         """Introduce bad data into investment account"""
-        from utils.helpers import BadDataGenerator
         
         if BadDataGenerator.should_generate_bad_data(self.bad_data_percentage):
             bad_data_type = BadDataGenerator.get_bad_data_type()

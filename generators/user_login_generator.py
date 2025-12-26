@@ -17,7 +17,6 @@ class UserLoginGenerator:
         
     def introduce_bad_data_login(self, login):
         """Introduce bad data into user login"""
-        from utils.helpers import BadDataGenerator
         
         if BadDataGenerator.should_generate_bad_data(self.bad_data_percentage):
             bad_data_type = BadDataGenerator.get_bad_data_type()
