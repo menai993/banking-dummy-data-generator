@@ -208,7 +208,7 @@ class DataExporter:
                 if mapping_data:
                     mapping_df = pd.DataFrame(mapping_data)
                     mapping_df.to_excel(writer, sheet_name="Sheet_Map", index=False)
-                    print(f"  Created mapping sheet")
+                    print("  Created mapping sheet")
             
             print(f"✅ Excel export completed: {filepath}")
             print(f"   Total sheets created: {len(sheets_created)} + 1 mapping sheet")
