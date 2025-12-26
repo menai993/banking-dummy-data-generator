@@ -1,108 +1,97 @@
-import pandas as pd
 import os
 import random
 import re
 from datetime import datetime
+from pathlib import Path
+import pandas as pd
 
 class DataExporter:
     @staticmethod
     def log_to_txt(text, output_dir="output"):
-        os.makedirs(output_dir, exist_ok=True)
-        filepath = os.path.join(output_dir, "import_errors.txt")
+        DataExporter._ensure_dir(output_dir)
+        filepath = Path(output_dir) / "import_errors.txt"
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open(filepath, "a", encoding="utf-8") as f:
+        with filepath.open("a", encoding="utf-8") as f:
             f.write(f"[{timestamp}] {text}\n\n")
 
     @staticmethod
     def export_to_csv(data, filename, output_dir="output"):
         """Export data to CSV file with UTF-8 encoding"""
-        os.makedirs(output_dir, exist_ok=True)
-        filepath = os.path.join(output_dir, filename)
-        
+        DataExporter._ensure_dir(output_dir)
+        filepath = Path(output_dir) / filename
+
         df = pd.DataFrame(data)
-        
-        # Use UTF-8 encoding and handle errors gracefully
+
+        # Drop helper columns in CSV export view if present
+        df = DataExporter._drop_bad_columns(df)
+
         try:
-            df.to_csv(filepath, index=False, encoding='utf-8')
-        except UnicodeEncodeError:
-            # Replace problematic characters
-            df.to_csv(filepath, index=False, encoding='utf-8', errors='replace')
-        except Exception as e:
-            print(f"Warning: Could not export {filename} as UTF-8: {e}")
-            # Fallback to system encoding
+            # Write using Path.open ensures we can control encoding consistently
+            with filepath.open("w", encoding="utf-8", errors="replace") as f:
+                df.to_csv(f, index=False)
+        except Exception:
+            # Fallback: let pandas handle defaults
             df.to_csv(filepath, index=False)
-        
+
         print(f"Exported {len(data)} records to {filepath}")
-        
-        # Also export a metadata file about bad data
-        bad_data_count = sum(1 for record in data if record.get('is_bad_data', False))
+
+        # Export metadata about bad data if any
+        bad_data_count = DataExporter._count_bad_data(data)
         if bad_data_count > 0:
             metadata = {
                 "total_records": len(data),
                 "bad_data_count": bad_data_count,
                 "bad_data_percentage": round(bad_data_count / len(data) * 100, 2),
                 "export_timestamp": datetime.now().isoformat(),
-                "file_name": filename
+                "file_name": filename,
             }
-            
-            metadata_file = os.path.join(output_dir, f"{filename}_metadata.json")
+
+            metadata_file = Path(output_dir) / f"{filename}_metadata.json"
             pd.DataFrame([metadata]).to_json(metadata_file, indent=2, force_ascii=False)
             print(f"Metadata exported to {metadata_file}")
-        
-        return filepath
+
+        return str(filepath)
     
     @staticmethod
     def export_to_sql_files(data_dict, output_dir="output/sql"):
         """Generate SQL INSERT statements for each table with UTF-8 encoding"""
-        os.makedirs(output_dir, exist_ok=True)
-        
+        DataExporter._ensure_dir(output_dir)
+
         sql_files = {}
         for table_name, data in data_dict.items():
             if not data:
                 continue
-            
+
             filename = f"{table_name}.sql"
-            filepath = os.path.join(output_dir, filename)
-            
-            # Use UTF-8 encoding to handle special characters
-            with open(filepath, 'w', encoding='utf-8', errors='replace') as f:
+            filepath = Path(output_dir) / filename
+
+            # Determine consistent columns: start with first record keys then add any missing keys
+            bad_cols = {'is_bad_data', 'bad_data_type'}
+            first_keys = [k for k in data[0].keys() if k not in bad_cols]
+            # collect additional keys in deterministic order
+            extras = []
+            for rec in data:
+                for k in rec.keys():
+                    if k in bad_cols or k in first_keys or k in extras:
+                        continue
+                    extras.append(k)
+            columns = first_keys + extras
+
+            bad_data_count = sum(1 for record in data if record.get('is_bad_data', False))
+
+            with filepath.open('w', encoding='utf-8', errors='replace') as f:
                 f.write(f"-- INSERT statements for {table_name}\n")
                 f.write(f"-- Generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                
-                # Count bad data
-                bad_data_count = sum(1 for record in data if record.get('is_bad_data', False))
                 f.write(f"-- Total records: {len(data)}, Bad data: {bad_data_count} ({round(bad_data_count/len(data)*100, 2)}%)\n\n")
-                
+
+                col_sql = ', '.join(columns)
                 for record in data:
-                    columns = ', '.join([col for col in record.keys() if col not in ['is_bad_data', 'bad_data_type']])
-                    
-                    # Safely format values with proper escaping
-                    values_list = []
-                    for key, value in record.items():
-                        if key in ['is_bad_data', 'bad_data_type']:
-                            continue
-                        
-                        if value is None:
-                            values_list.append('NULL')
-                        elif isinstance(value, (int, float)):
-                            values_list.append(str(value))
-                        elif isinstance(value, bool):
-                            values_list.append('1' if value else '0')
-                        else:
-                            # Escape single quotes and handle Unicode
-                            try:
-                                escaped_value = str(value).replace("'", "''")
-                                values_list.append(f"'{escaped_value}'")
-                            except:
-                                # If string conversion fails, use empty string
-                                values_list.append("''")
-                    
-                    values = ', '.join(values_list)
-                    f.write(f"INSERT INTO {table_name} ({columns}) VALUES ({values});\n")
-            
-            sql_files[table_name] = filepath
+                    values = ', '.join(DataExporter._format_sql_value(record.get(c)) for c in columns)
+                    f.write(f"INSERT INTO {table_name} ({col_sql}) VALUES ({values});\n")
+
+            sql_files[table_name] = str(filepath)
             print(f"Generated SQL file: {filepath} with {len(data)} INSERT statements ({bad_data_count} bad records)")
-        
+
         return sql_files
     
     @staticmethod
@@ -134,6 +123,31 @@ class DataExporter:
             sanitized = sanitized[:-1]
         
         return sanitized
+
+    @staticmethod
+    def _ensure_dir(path):
+        Path(path).mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _drop_bad_columns(df: pd.DataFrame) -> pd.DataFrame:
+        cols = [c for c in df.columns if c not in {'is_bad_data', 'bad_data_type'}]
+        return df[cols]
+
+    @staticmethod
+    def _count_bad_data(data) -> int:
+        return sum(1 for record in data if record.get('is_bad_data', False))
+
+    @staticmethod
+    def _format_sql_value(value):
+        if value is None:
+            return 'NULL'
+        if isinstance(value, bool):
+            return '1' if value else '0'
+        if isinstance(value, (int, float)):
+            return str(value)
+        # escape single quotes
+        s = str(value).replace("'", "''")
+        return f"'{s}'"
     
     @staticmethod
     def export_to_excel(data_dict, filename="banking_data.xlsx", output_dir="output"):
