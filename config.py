@@ -16,14 +16,14 @@ CONFIG = {
     "fraud_alerts_per_transaction": 0.05,     
     "user_logins_per_customer_min": 8,        
     "user_logins_per_customer_max": 30,       
-
     "exchange_rate_days": 365,
     "audit_logs_per_user_min": 5,
     "audit_logs_per_user_max": 50,
     "loans_per_customer_min": 0,
     "loans_per_customer_max": 2,
 
-    "output_formats": ["csv", "sql"],  # Options: csv, sql, -- soon excel will be available
+    # Output options: csv, sql, -- soon excel will be available
+    "output_formats": ["csv", "sql"],  
     "output_directory": "output",
 
     # Bad data configuration
@@ -55,6 +55,7 @@ CONFIG = {
     }
 }
 
+# MSSQL Import Configuration
 CONFIG["mssql_import"] = {
     "server": "localhost",                          # Your SQL Server
     "database": "YourDatabase",                     # Your database name

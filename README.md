@@ -27,7 +27,11 @@ dummy_banking_data/
 │   ├── names.py                  # Names, cities, states
 │   ├── addresses.py              # Address components
 │   ├── banking_terms.py          # Banking terminology
-│   └── banking_products.py       # Account & loan types
+│   ├── banking_products.py       # Account & loan types
+│   ├── fraud_constants.py
+│   ├── investment_products.py
+│   └── login_constants.py
+
 │
 │── generators/                   # Data generators
 │   ├── customer_generator.py
@@ -39,6 +43,9 @@ dummy_banking_data/
 │   ├── employee_generator.py
 │   ├── merchant_generator.py
 │   ├── audit_log_generator.py
+    ├── fraud_alert_generator.py
+    ├── user_login_generator.py
+    ├── investment_account_generator.py
 │   └── exchange_rate_generator.py
 │
 │── utils/
@@ -73,17 +80,34 @@ Edit **config.py** to control volume, relationships, output formats, and bad dat
 
 ```python
 CONFIG = {
+    # Volume controls
     "num_customers": 1000,
     "num_branches": 50,
     "num_employees": 200,
     "num_merchants": 500,
-
+    "num_investment_accounts": 300,           
+    
+    # Relationship controls
     "accounts_per_customer_min": 1,
     "accounts_per_customer_max": 3,
-
+    "cards_per_customer_min": 0,
+    "cards_per_customer_max": 2,
     "transactions_per_account_min": 5,
     "transactions_per_account_max": 50,
+    "fraud_alerts_per_transaction": 0.05,     
+    "user_logins_per_customer_min": 8,        
+    "user_logins_per_customer_max": 30,       
+    "exchange_rate_days": 365,
+    "audit_logs_per_user_min": 5,
+    "audit_logs_per_user_max": 50,
+    "loans_per_customer_min": 0,
+    "loans_per_customer_max": 2,
 
+    # Output options: csv, sql, -- soon excel will be available
+    "output_formats": ["csv", "sql"],  
+    "output_directory": "output",
+
+    # Bad data configuration
     "bad_data_percentage": {
         "customers": 0.20,
         "accounts": 0.15,
@@ -91,10 +115,25 @@ CONFIG = {
         "transactions": 0.10,
         "branches": 0.05,
         "employees": 0.08,
-        "loans": 0.15
+        "merchants": 0.12,
+        "loans": 0.15,
+        "loan_payments": 0.20,
+        "audit_logs": 0.05,
+        "exchange_rates": 0.03,
+        "investment_accounts": 0.12,          
+        "fraud_alerts": 0.18,                 
+        "user_logins": 0.08                   
     },
 
-    "output_formats": ["csv", "sql"]
+    # Types of bad data to generate
+    "bad_data_types": {
+        "missing_data": True,
+        "invalid_format": True,
+        "out_of_range": True,
+        "inconsistent_data": True,
+        "duplicate_data": False,
+        "malformed_data": True
+    }
 }
 ```
 
@@ -109,7 +148,7 @@ python main.py
 Console output example:
 
 ```
-[1/11] Generating customers (20.0% bad data)...
+[1/14] Generating customers (20.0% bad data)...
 Generated 1000 customers (200 bad records)
 ```
 
@@ -131,19 +170,24 @@ Generated 1000 customers (200 bad records)
 | merchants | Merchants |
 | audit_logs | System audit logs |
 | exchange_rates | Currency exchange rates |
-
+| fraud_alerts | Fraud detection and alert records |
+| investment_accounts | Investment accounts |
+| user_logins | User authentication and login activity |
 ---
 
 ## 🔗 Data Relationships
 
 ```
-customers → accounts → cards → transactions
+customers → accounts → cards → transactions → fraud_alerts
+     ↓           ↓
+customer_details loans → loan_payments
      ↓
-customer_details
-     ↓
-loans → loan_payments
+investment_accounts
 
-branches → employees
+branches → employees → employees (manager hierarchy)
+
+customers → user_logins
+
 ```
 
 ---
@@ -193,7 +237,10 @@ output/
 ├── transactions.csv
 ├── loans.csv
 ├── audit_logs.csv
+├── ...
+├── import_errors_YYYYMMDD_HHmmss.txt
 └── bad_data_report.json
+
 ```
 
 ### SQL
@@ -214,15 +261,19 @@ output/sql/
 
 ### Configure Connection
 
-Edit **import_to_mssql.py**:
+Edit **config.py**:
 
 ```python
-CONFIG = {
-    "server": "localhost",
-    "database": "YourDatabase",
-    "username": "YourUsername",
-    "password": "YourPassword",
-    "data_directory": "output"
+CONFIG["mssql_import"] = {
+    "server": "localhost",                          # Your SQL Server
+    "database": "YourDatabase",                     # Your database name
+    "username": "YourUsername",                     # SQL Server login
+    "password": "YourPassword",                     # SQL Server password
+    "data_directory": "output",                     # Directory with CSV files
+    "enable_quality_tracking": True,                # Quality tracking enablement
+    "create_views": True,                           # Create database views
+    "batch_size": 1000,                             # Rows per batch insert
+    "override_batch_size_based_on_file_size": True  # Adjust batch size based on file size
 }
 ```
 
