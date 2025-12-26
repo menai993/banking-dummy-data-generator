@@ -12,7 +12,7 @@ class DataExporter:
         filepath = Path(output_dir) / "import_errors.txt"
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with filepath.open("a", encoding="utf-8") as f:
-            f.write(f"[{timestamp}] {text}\n\n")
+            f.write(f"[{timestamp}] {text}\n")
 
     @staticmethod
     def export_to_csv(data, filename, output_dir="output"):
@@ -21,9 +21,6 @@ class DataExporter:
         filepath = Path(output_dir) / filename
 
         df = pd.DataFrame(data)
-
-        # Drop helper columns in CSV export view if present
-        df = DataExporter._drop_bad_columns(df)
 
         try:
             # Write using Path.open ensures we can control encoding consistently

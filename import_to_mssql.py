@@ -412,10 +412,17 @@ class MSSQLImporter:
                 print(f"  Warning: {csv_file} is empty or could not be read")
                 return 0, 0, 0
             
-            # Count bad data
+            # Count bad data (coerce various representations to boolean)
             bad_records = 0
             if 'is_bad_data' in df.columns:
-                bad_records = df['is_bad_data'].sum()
+                try:
+                    bad_records = int(df['is_bad_data'].map(lambda v: str(v).strip().lower() in ('true', '1', 'yes', 'y')).sum())
+                except Exception:
+                    # Fallback: attempt numeric coercion then boolean
+                    try:
+                        bad_records = int(pd.to_numeric(df['is_bad_data'], errors='coerce').fillna(0).astype(bool).sum())
+                    except Exception:
+                        bad_records = 0
             
             # Connect to database
             conn = pyodbc.connect(self.connection_string)
@@ -459,8 +466,7 @@ class MSSQLImporter:
                         batch_errors += 1
                         csv_line = start_idx + i + 2
                         DataExporter.log_to_txt(f"|{csv_file}| CSV line {csv_line}: " + str(e),config.CONFIG["output_directory"])
-                        if batch_errors <= 3:  # Show only first 3 errors per batch
-                            print(f"    Row error at CSV line {csv_line}: {str(e)[:100]}")                           
+                                                  
                         continue
                 
                 rows_imported += batch_success
@@ -469,7 +475,7 @@ class MSSQLImporter:
                 # Show progress
                 if end_idx % (batch_size * 10) == 0 or end_idx == total_rows:
                     percent = (end_idx / total_rows) * 100
-                    print(f"    Progress: {end_idx:,}/{total_rows:,} rows ({percent:.1f}%)")
+                    print(f"    Progress: {end_idx:,}/{total_rows:,} rows ({percent:.1f}%) Errors: {error_count:,}", end='\r')
             
             # Calculate duration
             duration = (datetime.now() - start_time).total_seconds()
@@ -496,8 +502,9 @@ class MSSQLImporter:
             conn.commit()
             conn.close()
             
+            error_marker = "❌ " if error_count > 0 else ""
             print(f"  ✅ Imported {rows_imported:,} rows into {table_name} "
-                  f"({error_count:,} errors, {bad_records:,} bad records, {duration:.1f}s)")
+                f"({error_marker}{error_count:,} errors, {bad_records:,} bad records, {duration:.1f}s)")
             return rows_imported, error_count, bad_records
             
         except Exception as e:
