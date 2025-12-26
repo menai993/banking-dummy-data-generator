@@ -1,7 +1,7 @@
 import random
 from datetime import datetime, timedelta
 from constants.addresses import CITIES, STATES
-from constants.banking_products import BRANCH_TYPES, DEPARTMENT_TYPES
+from constants.banking_products import BRANCH_TYPES
 from utils.helpers import BadDataGenerator
 
 class BranchGenerator:

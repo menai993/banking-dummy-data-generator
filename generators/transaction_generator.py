@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from constants.banking_terms import TRANSACTION_TYPES, TRANSACTION_STATUS, CURRENCIES
+from constants.banking_terms import TRANSACTION_TYPES, TRANSACTION_STATUS
 from utils.helpers import BadDataGenerator
 
 class TransactionGenerator:

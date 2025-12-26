@@ -1,5 +1,4 @@
 import random
-import re
 from datetime import datetime, timedelta
 from constants.names import FIRST_NAMES, LAST_NAMES
 from constants.addresses import STREET_NAMES, STREET_TYPES, CITIES, STATES, ZIP_CODES, COUNTRIES
