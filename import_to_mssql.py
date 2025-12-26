@@ -583,12 +583,22 @@ class MSSQLImporter:
             print(f"{'='*70}")
             
             # Adjust batch size based on file size
-            batch_size = 500 if file_size > 10 else 1000
-            batch_size = 250 if file_size > 50 else batch_size
-            
+            user_requested_batch_size = config.CONFIG["mssql_import"]["batch_size"]
+            override = config.CONFIG["mssql_import"].get("override_batch_size_based_on_file_size")
+            if not override:
+                batch_size = user_requested_batch_size
+            else:
+                batch_size = 500 if file_size > 10 else 1000
+                batch_size = 250 if file_size > 50 else batch_size
+    
+                if batch_size != user_requested_batch_size:
+                    print(f"  Note: Adjusted batch size to {batch_size} based on file size. User requested: {user_requested_batch_size}")
+                
             rows, errors, bad = self.import_csv_with_quality_check(
                 filepath, table_name, batch_size=batch_size
             )
+
+            
             
             total_rows += rows
             total_errors += errors
