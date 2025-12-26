@@ -393,12 +393,14 @@ class MSSQLImporter:
             return False
     
     # --- Helper methods to reduce complexity of import_csv_with_quality_check ---
-    def _read_csv(self, csv_file):
+    @staticmethod
+    def _read_csv(csv_file):
         """Read CSV into DataFrame with consistent options."""
         df = pd.read_csv(csv_file, encoding='utf-8', low_memory=False)
         return df
 
-    def _count_bad_records(self, df):
+    @staticmethod
+    def _count_bad_records(df):
         """Robustly count bad records from `is_bad_data` column."""
         if 'is_bad_data' not in df.columns:
             return 0
@@ -411,7 +413,8 @@ class MSSQLImporter:
             except Exception:
                 return 0
 
-    def _prepare_insert(self, df, table_name):
+    @staticmethod
+    def _prepare_insert(df, table_name):
         """Return columns list and prepared insert statement string."""
         columns = [col for col in df.columns if col != 'Unnamed: 0']
         columns_str = ', '.join(columns)
