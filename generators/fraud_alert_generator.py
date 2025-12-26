@@ -53,7 +53,8 @@ class FraudAlertGenerator:
         
         return alert
     
-    def parse_transaction_date(self, transaction):
+    @staticmethod
+    def parse_transaction_date(transaction):
         """Safely parse transaction date with multiple fallbacks"""
         try:
             # Try to get the transaction date

@@ -19,15 +19,18 @@ class EmployeeGenerator:
                 self.employee_ids.add(emp_id)
                 return emp_id
     
-    def generate_email(self, first_name, last_name):
+    @staticmethod
+    def generate_email(first_name, last_name):
         """Generate employee email"""
         return f"{first_name.lower()}.{last_name.lower()}@bank.com"
     
-    def generate_phone_extension(self):
+    @staticmethod
+    def generate_phone_extension():
         """Generate phone extension"""
         return f"x{random.randint(1000, 9999)}"
     
-    def generate_salary(self, role):
+    @staticmethod
+    def generate_salary(role):
         """Generate salary based on role"""
         base_salaries = {
             "Teller": (30000, 45000),

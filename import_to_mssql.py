@@ -612,7 +612,8 @@ class MSSQLImporter:
         
         return total_rows
     
-    def _print_import_summary(self, total_rows, total_errors, total_bad, import_stats):
+    @staticmethod
+    def _print_import_summary(total_rows, total_errors, total_bad, import_stats):
         """Print import summary"""
         print("\n" + "=" * 70)
         print("IMPORT SUMMARY")
@@ -670,7 +671,8 @@ class MSSQLImporter:
         except Exception as e:
             print(f"\nNote: Could not retrieve quality report: {e}")
     
-    def _generate_analysis_queries(self):
+    @staticmethod
+    def _generate_analysis_queries():
         """Generate useful SQL queries for data analysis"""
         print("\n" + "=" * 70)
         print("USEFUL SQL QUERIES FOR DATA ANALYSIS")

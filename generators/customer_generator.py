@@ -21,12 +21,14 @@ class CustomerGenerator:
                 self.customer_ids.add(cust_id)
                 return cust_id
     
-    def generate_email(self, first_name, last_name):
+    @staticmethod
+    def generate_email(first_name, last_name):
         """Generate email address"""
         domains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "company.com"]
         return f"{first_name.lower()}.{last_name.lower()}@{random.choice(domains)}"
     
-    def generate_invalid_email(self):
+    @staticmethod
+    def generate_invalid_email():
         """Generate invalid email addresses"""
         invalid_emails = [
             "invalid.email",
@@ -40,11 +42,13 @@ class CustomerGenerator:
         ]
         return random.choice(invalid_emails)
     
-    def generate_phone(self):
+    @staticmethod
+    def generate_phone():
         """Generate phone number"""
         return f"+1-{random.randint(200, 999)}-{random.randint(200, 999)}-{random.randint(1000, 9999)}"
     
-    def generate_invalid_phone(self):
+    @staticmethod
+    def generate_invalid_phone():
         """Generate invalid phone numbers"""
         invalid_phones = [
             "123",  # Too short
@@ -57,7 +61,8 @@ class CustomerGenerator:
         ]
         return random.choice(invalid_phones)
     
-    def generate_address(self):
+    @staticmethod
+    def generate_address():
         """Generate random address"""
         street_num = random.randint(1, 9999)
         street_name = random.choice(STREET_NAMES)
@@ -74,7 +79,8 @@ class CustomerGenerator:
             "country": random.choice(COUNTRIES)
         }
     
-    def generate_invalid_address(self):
+    @staticmethod
+    def generate_invalid_address():
         """Generate invalid address"""
         invalid_addresses = [
             {"street": "", "city": "", "state": "XX", "zip_code": "00000", "country": ""},
@@ -84,7 +90,8 @@ class CustomerGenerator:
         ]
         return random.choice(invalid_addresses)
     
-    def generate_date_of_birth(self, future_date=False):
+    @staticmethod
+    def generate_date_of_birth(future_date=False):
         """Generate random date of birth"""
         if future_date:
             # Generate future date (invalid)
@@ -97,14 +104,16 @@ class CustomerGenerator:
             random_days = random.randint(0, (end_date - start_date).days)
             return (start_date + timedelta(days=random_days)).strftime("%Y-%m-%d")
     
-    def generate_credit_score(self, invalid=False):
+    @staticmethod
+    def generate_credit_score(invalid=False):
         """Generate credit score"""
         if invalid:
             invalid_scores = [-100, 0, 1000, 9999, None]
             return random.choice(invalid_scores)
         return random.randint(300, 850)
     
-    def generate_annual_income(self, invalid=False):
+    @staticmethod
+    def generate_annual_income(invalid=False):
         """Generate annual income"""
         if invalid:
             invalid_incomes = [-50000, 0, 999999999, -1, None]

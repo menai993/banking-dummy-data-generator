@@ -7,7 +7,8 @@ class ExchangeRateGenerator:
         self.bad_data_percentage = bad_data_percentage
         self.exchange_rates = []
         
-    def generate_currency_pairs(self):
+    @staticmethod
+    def generate_currency_pairs():
         """Generate currency pairs"""
         return [
             ("USD", "EUR"), ("USD", "GBP"), ("USD", "JPY"), ("USD", "CAD"),
@@ -15,7 +16,8 @@ class ExchangeRateGenerator:
             ("GBP", "JPY"), ("AUD", "USD"), ("CAD", "USD")
         ]
     
-    def generate_base_rate(self, base_currency, target_currency):
+    @staticmethod
+    def generate_base_rate(base_currency, target_currency):
         """Generate base exchange rate"""
         base_rates = {
             ("USD", "EUR"): 0.92,

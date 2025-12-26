@@ -11,7 +11,8 @@ class CardGenerator:
         self.card_ids = set()
         self.cards = []
         
-    def generate_card_number(self, network, invalid=False):
+    @staticmethod
+    def generate_card_number(network, invalid=False):
         """Generate card number"""
         if invalid:
             invalid_numbers = [
@@ -56,7 +57,8 @@ class CardGenerator:
                 self.card_ids.add(card_id)
                 return card_id
     
-    def generate_expiry_date(self, expired=False):
+    @staticmethod
+    def generate_expiry_date(expired=False):
         """Generate expiry date"""
         if expired:
             # Generate past date
@@ -67,7 +69,8 @@ class CardGenerator:
             expiry_date = datetime.now() + timedelta(days=random.randint(365, 365*5))
             return expiry_date.strftime("%m/%y")
     
-    def generate_invalid_expiry_date(self):
+    @staticmethod
+    def generate_invalid_expiry_date():
         """Generate invalid expiry date"""
         invalid_dates = [
             "13/25",  # Invalid month
@@ -80,7 +83,8 @@ class CardGenerator:
         ]
         return random.choice(invalid_dates)
     
-    def generate_cvv(self, invalid=False):
+    @staticmethod
+    def generate_cvv(invalid=False):
         """Generate CVV"""
         if invalid:
             invalid_cvvs = [
@@ -94,7 +98,8 @@ class CardGenerator:
             return random.choice(invalid_cvvs)
         return f"{random.randint(100, 999)}"
     
-    def generate_credit_limit(self, card_type, credit_score, invalid=False):
+    @staticmethod
+    def generate_credit_limit(card_type, credit_score, invalid=False):
         """Generate credit limit"""
         if invalid:
             invalid_limits = [
