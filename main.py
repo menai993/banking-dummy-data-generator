@@ -299,7 +299,7 @@ def main():
     print(f"Total execution time: {elapsed_time:.2f} seconds")
     
     # Configuration summary
-    print(f"\nBad Data Configuration:")
+    print("\nBad Data Configuration:")
     for table, percentage in bad_data_config.items():
         print(f"  {table:20} {percentage*100:5.1f}%")
     
