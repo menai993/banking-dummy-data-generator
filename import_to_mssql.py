@@ -950,23 +950,18 @@ def main():
     print("  4. Generate analysis queries")
     print("=" * 70)
     
-    # Configuration - UPDATE THESE FOR YOUR ENVIRONMENT
-    CONFIG = {
-        "server": "localhost",              # Your SQL Server
-        "database": "YourDatabase",      # Your database name
-        "username": "YourUsername",             # SQL Server login
-        "password": "YourPassword",             # SQL Server password
-        "data_directory": "output",         # Directory with CSV files
-        "enable_quality_tracking": True,    # Quality tracking enablement
-        "create_views": True,               # Create database views
-        "batch_size": 1000                  # Rows per batch insert
-    }
-    
+    # MSSQL configuration is provided in config.py under CONFIG['mssql_import']
+    mssql_cfg = config.CONFIG.get("mssql_import", {})
+
+    if not mssql_cfg:
+        print("No MSSQL configuration found in config.py under CONFIG['mssql_import'].")
+        print("Please add your MSSQL settings to config.py or update the generator config.")
+        return
 
     # Display current configuration
     print("\nCURRENT CONFIGURATION:")
     print("-" * 40)
-    for key, value in CONFIG.items():
+    for key, value in mssql_cfg.items():
         if key == "password":
             print(f"  {key:20} {'*' * len(str(value))}")
         else:
@@ -982,10 +977,10 @@ def main():
     # Test database connection
     print("\nTesting database connection...")
     importer = MSSQLImporter(
-        CONFIG["server"],
-        CONFIG["database"],
-        CONFIG["username"],
-        CONFIG["password"]
+        mssql_cfg.get("server"),
+        mssql_cfg.get("database"),
+        mssql_cfg.get("username"),
+        mssql_cfg.get("password")
     )
     
     if not importer.test_connection():
@@ -1007,10 +1002,10 @@ def main():
         print("\n" + "=" * 70)
         print("STEP 2: IMPORTING DATA")
         print("=" * 70)
-        total_rows = importer.import_all_data(CONFIG["data_directory"])
+        total_rows = importer.import_all_data(mssql_cfg.get("data_directory", "output"))
         
         # Step 3: Create views (optional)
-        if CONFIG["create_views"] and total_rows > 0:
+        if mssql_cfg.get("create_views", True) and total_rows > 0:
             print("\n" + "=" * 70)
             print("STEP 3: CREATING DATABASE VIEWS")
             print("=" * 70)

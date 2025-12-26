@@ -54,3 +54,14 @@ CONFIG = {
         "malformed_data": True
     }
 }
+
+CONFIG["mssql_import"] = {
+    "server": "localhost",              # Your SQL Server
+    "database": "YourDatabase",         # Your database name
+    "username": "YourUsername",         # SQL Server login
+    "password": "YourPassword",         # SQL Server password
+    "data_directory": "output",         # Directory with CSV files
+    "enable_quality_tracking": True,      # Quality tracking enablement
+    "create_views": True,                 # Create database views
+    "batch_size": 1000                    # Rows per batch insert
+}
