@@ -31,7 +31,8 @@ class MSSQLImporter:
             f"UID={username};"
             f"PWD={password}"
         )
-        
+        self.runtime = datetime.now().strftime("%Y%m%d_%H%M%S")
+
     def test_connection(self):
         """Test database connection"""
         try:
@@ -391,6 +392,49 @@ class MSSQLImporter:
             print(f"❌ Database connection/creation error: {e}")
             return False
     
+    # --- Helper methods to reduce complexity of import_csv_with_quality_check ---
+    def _read_csv(self, csv_file):
+        """Read CSV into DataFrame with consistent options."""
+        df = pd.read_csv(csv_file, encoding='utf-8', low_memory=False)
+        return df
+
+    def _count_bad_records(self, df):
+        """Robustly count bad records from `is_bad_data` column."""
+        if 'is_bad_data' not in df.columns:
+            return 0
+        series = df['is_bad_data']
+        try:
+            return int(series.map(lambda v: str(v).strip().lower() in ('true', '1', 'yes', 'y')).sum())
+        except Exception:
+            try:
+                return int(pd.to_numeric(series, errors='coerce').fillna(0).astype(bool).sum())
+            except Exception:
+                return 0
+
+    def _prepare_insert(self, df, table_name):
+        """Return columns list and prepared insert statement string."""
+        columns = [col for col in df.columns if col != 'Unnamed: 0']
+        columns_str = ', '.join(columns)
+        placeholders = ', '.join(['?' for _ in columns])
+        insert_stmt = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
+        return columns, insert_stmt
+
+    def _process_batch(self, cursor, batch, columns, insert_stmt, csv_file, start_idx):
+        """Insert rows from a batch; returns (success_count, error_count) and logs failures."""
+        batch_success = 0
+        batch_errors = 0
+        for i, (_, row) in enumerate(batch.iterrows()):
+            try:
+                row_values = [None if pd.isna(row[col]) else row[col] for col in columns]
+                cursor.execute(insert_stmt, tuple(row_values))
+                batch_success += 1
+            except Exception as e:
+                batch_errors += 1
+                csv_line = start_idx + i + 2
+                DataExporter.log_to_txt(f"|{csv_file}| CSV line {csv_line}: " + str(e), config.CONFIG["output_directory"],self.runtime)
+                continue
+        return batch_success, batch_errors
+    
 
     
     def import_csv_with_quality_check(self, csv_file, table_name, batch_size=1000):
@@ -403,83 +447,47 @@ class MSSQLImporter:
             batch_size: Number of rows to insert in each batch
         """
         try:
-            # Read CSV file
+            # Read CSV and validate
             print(f"  Reading {csv_file}...")
-            df = pd.read_csv(csv_file, encoding='utf-8', low_memory=False)
-            
-            # Handle potential encoding issues
+            df = self._read_csv(csv_file)
             if df.empty:
                 print(f"  Warning: {csv_file} is empty or could not be read")
                 return 0, 0, 0
-            
-            # Count bad data (coerce various representations to boolean)
-            bad_records = 0
-            if 'is_bad_data' in df.columns:
-                try:
-                    bad_records = int(df['is_bad_data'].map(lambda v: str(v).strip().lower() in ('true', '1', 'yes', 'y')).sum())
-                except Exception:
-                    # Fallback: attempt numeric coercion then boolean
-                    try:
-                        bad_records = int(pd.to_numeric(df['is_bad_data'], errors='coerce').fillna(0).astype(bool).sum())
-                    except Exception:
-                        bad_records = 0
-            
+
+            # Count bad records
+            bad_records = self._count_bad_records(df)
+
             # Connect to database
             conn = pyodbc.connect(self.connection_string)
             cursor = conn.cursor()
-            
-            # Prepare INSERT statement
-            columns = [col for col in df.columns if col != 'Unnamed: 0']
-            columns_str = ', '.join(columns)
-            placeholders = ', '.join(['?' for _ in columns])
-            insert_stmt = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
-            
-            # Insert data in batches
+
+            # Prepare insert statement and batch process
+            columns, insert_stmt = self._prepare_insert(df, table_name)
+
             rows_imported = 0
             error_count = 0
             start_time = datetime.now()
-            
+
             total_rows = len(df)
             print(f"  Importing {total_rows:,} rows in batches of {batch_size}...")
-            
+
             for start_idx in range(0, total_rows, batch_size):
                 end_idx = min(start_idx + batch_size, total_rows)
                 batch = df.iloc[start_idx:end_idx]
-                
-                batch_errors = 0
-                batch_success = 0
-                
-                for i, (_, row) in enumerate(batch.iterrows()):
-                    try:
-                        # Convert NaN to None and prepare values
-                        row_values = []
-                        for col in columns:
-                            val = row[col]
-                            if pd.isna(val):
-                                row_values.append(None)
-                            else:
-                                row_values.append(val)
-                        
-                        cursor.execute(insert_stmt, tuple(row_values))
-                        batch_success += 1
-                    except Exception as e:
-                        batch_errors += 1
-                        csv_line = start_idx + i + 2
-                        DataExporter.log_to_txt(f"|{csv_file}| CSV line {csv_line}: " + str(e),config.CONFIG["output_directory"])
-                                                  
-                        continue
-                
+
+                batch_success, batch_errors = self._process_batch(cursor, batch, columns, insert_stmt, csv_file, start_idx)
+
                 rows_imported += batch_success
                 error_count += batch_errors
-                
+
                 # Show progress
                 if end_idx % (batch_size * 10) == 0 or end_idx == total_rows:
                     percent = (end_idx / total_rows) * 100
                     print(f"    Progress: {end_idx:,}/{total_rows:,} rows ({percent:.1f}%) Errors: {error_count:,}", end='\r')
-            
+
             # Calculate duration
             duration = (datetime.now() - start_time).total_seconds()
-            
+
             # Log data quality metrics
             if table_name != "data_quality_log":
                 log_stmt = """
@@ -487,7 +495,7 @@ class MSSQLImporter:
                 (table_name, total_records, bad_records, bad_percentage, error_count, success_count, duration_seconds)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """
-                
+
                 bad_percentage = (bad_records / total_rows * 100) if total_rows > 0 else 0
                 cursor.execute(log_stmt, (
                     table_name,
@@ -498,10 +506,10 @@ class MSSQLImporter:
                     rows_imported,
                     int(duration)
                 ))
-            
+
             conn.commit()
             conn.close()
-            
+
             error_marker = "❌ " if error_count > 0 else ""
             print(f"  ✅ Imported {rows_imported:,} rows into {table_name} "
                 f"({error_marker}{error_count:,} errors, {bad_records:,} bad records, {duration:.1f}s)")

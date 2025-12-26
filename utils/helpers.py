@@ -7,9 +7,10 @@ import pandas as pd
 
 class DataExporter:
     @staticmethod
-    def log_to_txt(text, output_dir="output"):
+    def log_to_txt(text, output_dir="output", runtime=None):
         DataExporter._ensure_dir(output_dir)
-        filepath = Path(output_dir) / "import_errors.txt"
+
+        filepath = Path(output_dir) / f"import_errors_{runtime}.txt"
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with filepath.open("a", encoding="utf-8") as f:
             f.write(f"[{timestamp}] {text}\n")
