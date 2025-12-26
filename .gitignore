@@ -1,0 +1,7 @@
+# Ignore 
+output/
+__pycache__/
+constants/__pycache__/
+generators/__pycache__/
+utils/__pycache__/
+/config.py
