@@ -165,6 +165,7 @@ class FraudAlertGenerator:
                 "assigned_analyst_id": f"ANALYST_{random.randint(100, 999)}" if random.random() > 0.4 else None,
                 "resolution_date": None,
                 "financial_loss": round(amount * random.uniform(0, 0.8), 2) if random.random() > 0.5 else 0,
+                "is_false_positive": False,
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             
@@ -185,3 +186,17 @@ class FraudAlertGenerator:
         
         print(f"Generated {len(self.fraud_alerts)} fraud alerts ({bad_alert_count} with bad data)")
         return self.fraud_alerts
+
+
+def generate_fraud_alert(transaction_id, account_id, customer_id):
+    """Compatibility shim: generate a single fraud alert for given transaction/account/customer."""
+    transaction = {
+        "transaction_id": transaction_id,
+        "account_id": account_id,
+        "customer_id": customer_id,
+        "amount": random.uniform(10, 20000)
+    }
+    # Force at least one alert for this shim by setting fraud_rate=1.0
+    gen = FraudAlertGenerator(fraud_rate=1.0, transactions=[transaction])
+    alerts = gen.generate()
+    return alerts[0] if alerts else None

@@ -214,3 +214,19 @@ class CardGenerator:
         
         print(f"Generated {len(self.cards)} cards ({bad_card_count} with bad data)")
         return self.cards
+
+
+def generate_card(customer_id: str, account_id: str):
+    """Compatibility shim: generate a single card for the given customer and account."""
+    customer = {
+        "customer_id": customer_id,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    account = {
+        "account_id": account_id,
+        "customer_id": customer_id,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    gen = CardGenerator([customer], [account])
+    cards = gen.generate(1, 1)
+    return cards[0] if cards else None

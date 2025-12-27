@@ -337,3 +337,12 @@ class LoanGenerator:
         print(f"Generated {len(self.loan_payments)} loan payments")
         
         return self.loans, self.loan_payments
+
+
+def generate_loan(customer_id: str, account_id: str):
+    """Compatibility shim: generate a single loan for given customer and account."""
+    customer = {"customer_id": customer_id, "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    account = {"account_id": account_id, "customer_id": customer_id, "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    gen = LoanGenerator([customer], [account])
+    loans, _ = gen.generate(1, 1)
+    return loans[0] if loans else None

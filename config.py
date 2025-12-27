@@ -67,3 +67,31 @@ CONFIG["mssql_import"] = {
     "batch_size": 1000,                             # Rows per batch insert
     "override_batch_size_based_on_file_size": True  # Adjust batch size based on file size
 }
+
+# Simulator specific configuration
+CONFIG["simulator"] = {
+    # How to render booleans for SQL inserts: if True use 1/0, else use 'TRUE'/'FALSE'
+    "sql_boolean_as_int": True,
+
+    # Default number of operations when running simulator
+    "default_num_operations": 20,
+
+    # Operation weights can be overridden here (keys must match simulator operation names)
+    "operation_weights": {
+        "INSERT_CUSTOMER": 0.10,
+        "UPDATE_CUSTOMER": 0.08,
+        "INSERT_ACCOUNT": 0.10,
+        "UPDATE_ACCOUNT": 0.08,
+        "INSERT_TRANSACTION": 0.15,
+        "UPDATE_TRANSACTION": 0.08,
+        "INSERT_CARD": 0.08,
+        "UPDATE_CARD": 0.05,
+        "INSERT_LOAN": 0.08,
+        "UPDATE_LOAN": 0.05,
+        "INSERT_FRAUD_ALERT": 0.08,
+        "INSERT_LOGIN": 0.07
+    },
+
+    # Whether to stop on first SQL error (True) or continue (False)
+    "stop_on_error": False
+}

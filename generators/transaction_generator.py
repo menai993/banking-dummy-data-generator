@@ -231,3 +231,17 @@ class TransactionGenerator:
         
         print(f"Generated {len(self.transactions)} transactions ({bad_transaction_count} with bad data)")
         return self.transactions
+
+
+def generate_transaction(account_id: str):
+    """Compatibility shim: generate a single transaction for an account_id."""
+    account = {
+        "account_id": account_id,
+        "account_type": "Checking",
+        "currency": "USD",
+        "opened_date": (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"),
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    gen = TransactionGenerator([account], [])
+    transactions = gen.generate(1, 1)
+    return transactions[0] if transactions else None
