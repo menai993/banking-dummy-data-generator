@@ -50,19 +50,19 @@ dummy_banking_data/
     ├── investment_account_generator.py
 │   └── exchange_rate_generator.py
 │
-│── config/
+├── config/
 │   └── create_statements.py      # Centralized DDL definitions
 │
-│── utils/
+├── utils/
 │   └── helpers.py                # Export & bad data utilities
 │
-│── main.py                       # Orchestration script
-│── config.py                     # Central configuration
-│── import_to_mssql.py            # MSSQL importer
-│── data_generator_mssql.py       # CDC data simulator
-│── enable_cdc.py                 # CDC enable/disable utility
-│── requirements.txt
-│── README.md
+├── main.py                       # Orchestration script
+├── config.py                     # Central configuration
+├── import_to_mssql.py            # MSSQL importer
+├── data_generator_mssql.py       # CDC data simulator
+├── enable_cdc.py                 # CDC enable/disable utility
+├── requirements.txt
+├── README.md
 └── output/                       # Generated files
 ```
 
@@ -373,7 +373,7 @@ Choose action [enable / disable / exit]:
 #### Supported Operations
 
 | Operation Type | Description |
-|---------------|-------------|
+|------|------------|
 | INSERT_CUSTOMER | Add new customer records |
 | UPDATE_CUSTOMER | Modify customer contact info |
 | INSERT_ACCOUNT | Create new accounts |
@@ -481,19 +481,10 @@ class CustomGenerator:
 ## 📋 Useful Commands
 
 ```bash
-# Generate initial dataset
 python main.py
-
-# Import to MSSQL
 python import_to_mssql.py
-
-# Enable/disable CDC
 python enable_cdc.py
-
-# Simulate CDC operations
 python data_generator_mssql.py
-
-# Clean output directory
 rm -rf output/*
 ```
 
