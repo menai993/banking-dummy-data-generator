@@ -6,7 +6,6 @@ Streamlit Web Interface for Banking Dummy Data Generator
 import streamlit as st
 import pandas as pd
 import time
-import json
 from datetime import datetime
 from generators.customer_generator import CustomerGenerator
 from generators.account_generator import AccountGenerator
@@ -265,7 +264,6 @@ def generate_data(generation_config):
 
 def export_data(all_data, output_formats, output_dir):
     """Export generated data to specified formats"""
-    exporter = DataExporter()
     export_status = {}
     
     try:
@@ -273,24 +271,26 @@ def export_data(all_data, output_formats, output_dir):
             st.info("Exporting to CSV files...")
             for table_name, data in all_data.items():
                 if data:
-                    exporter.export_to_csv(data, f"{table_name}.csv", output_dir)
+                    DataExporter.export_to_csv(data, f"{table_name}.csv", output_dir)
             export_status["csv"] = "✅ Success"
         
         if "sql" in output_formats:
             st.info("Generating SQL files...")
-            exporter.export_to_sql_files(all_data, f"{output_dir}/sql")
+            DataExporter.export_to_sql_files(all_data, f"{output_dir}/sql")
             export_status["sql"] = "✅ Success"
         
         if "excel" in output_formats:
             st.info("Exporting to Excel...")
+            # Clean data for Excel export (remove internal columns)
             clean_data = {}
             for table_name, data in all_data.items():
-                clean_records = []
-                for record in data:
-                    clean_record = {k: v for k, v in record.items() if k not in ['is_bad_data', 'bad_data_type']}
-                    clean_records.append(clean_record)
-                clean_data[table_name] = clean_records
-            exporter.export_to_excel(clean_data, "banking_data.xlsx", output_dir)
+                if data:
+                    clean_records = []
+                    for record in data:
+                        clean_record = {k: v for k, v in record.items() if k not in ['is_bad_data', 'bad_data_type']}
+                        clean_records.append(clean_record)
+                    clean_data[table_name] = clean_records
+            DataExporter.export_to_excel(clean_data, "banking_data.xlsx", output_dir)
             export_status["excel"] = "✅ Success"
         
         return export_status, None
@@ -457,16 +457,20 @@ def main():
             
             if selected_table and all_data[selected_table]:
                 preview_data = all_data[selected_table][:100]  # Show first 100 records
-                df_preview = pd.DataFrame(preview_data)
                 
-                # Remove internal columns for cleaner display
-                display_cols = [col for col in df_preview.columns if col not in ['is_bad_data', 'bad_data_type']]
+                # Filter columns before creating DataFrame for better memory efficiency
+                display_records = []
+                for record in preview_data:
+                    display_record = {k: v for k, v in record.items() if k not in ['is_bad_data', 'bad_data_type']}
+                    display_records.append(display_record)
                 
-                st.dataframe(df_preview[display_cols], use_container_width=True)
+                df_preview = pd.DataFrame(display_records)
+                
+                st.dataframe(df_preview, use_container_width=True)
                 st.caption(f"Showing first 100 of {len(all_data[selected_table]):,} records")
                 
                 # Download button for selected table
-                csv_data = df_preview[display_cols].to_csv(index=False)
+                csv_data = df_preview.to_csv(index=False)
                 st.download_button(
                     label=f"📥 Download {selected_table}.csv",
                     data=csv_data,
