@@ -14,6 +14,8 @@ This project generates **realistic, relational banking datasets** with **control
 - 📤 Export to **CSV, SQL**
 - 🗄️ Direct **MSSQL import with quality logging**
 - 📊 Automatic **bad data analytics report**
+- 🔄 **CDC (Change Data Capture) simulation & management**
+- 🎲 **Live data mutation testing** for CDC/ETL validation
 - 🧱 Modular & **easily extensible architecture**
 - 🎯 Ideal for **portfolios, demos, testing & learning**
 
@@ -43,10 +45,13 @@ dummy_banking_data/
 │   ├── employee_generator.py
 │   ├── merchant_generator.py
 │   ├── audit_log_generator.py
-    ├── fraud_alert_generator.py
-    ├── user_login_generator.py
-    ├── investment_account_generator.py
+│   ├── fraud_alert_generator.py
+│   ├── user_login_generator.py
+│   ├── investment_account_generator.py
 │   └── exchange_rate_generator.py
+│
+│── config/
+│   └── create_statements.py      # Centralized DDL definitions
 │
 │── utils/
 │   └── helpers.py                # Export & bad data utilities
@@ -54,6 +59,8 @@ dummy_banking_data/
 │── main.py                       # Orchestration script
 │── config.py                     # Central configuration
 │── import_to_mssql.py            # MSSQL importer
+│── data_generator_mssql.py       # CDC data simulator
+│── enable_cdc.py                 # CDC enable/disable utility
 │── requirements.txt
 │── README.md
 └── output/                       # Generated files
@@ -134,6 +141,27 @@ CONFIG = {
         "duplicate_data": False,
         "malformed_data": True
     }
+}
+
+# Simulator specific configuration
+CONFIG["simulator"] = {
+    "sql_boolean_as_int": True,               # Boolean format in SQL (1/0 vs TRUE/FALSE)
+    "default_num_operations": 20,             # Default operations for CDC simulation
+    "operation_weights": {                     # Weighted operation distribution
+        "INSERT_CUSTOMER": 0.10,
+        "UPDATE_CUSTOMER": 0.08,
+        "INSERT_ACCOUNT": 0.10,
+        "UPDATE_ACCOUNT": 0.08,
+        "INSERT_TRANSACTION": 0.15,
+        "UPDATE_TRANSACTION": 0.08,
+        "INSERT_CARD": 0.08,
+        "UPDATE_CARD": 0.05,
+        "INSERT_LOAN": 0.08,
+        "UPDATE_LOAN": 0.05,
+        "INSERT_FRAUD_ALERT": 0.08,
+        "INSERT_LOGIN": 0.07
+    },
+    "stop_on_error": False                     # Continue on SQL errors
 }
 ```
 
@@ -289,14 +317,137 @@ Imported tables include:
 
 ---
 
+## 🔄 CDC (Change Data Capture) Features
+
+### Overview
+
+The project includes **CDC simulation and management tools** for testing data pipelines, ETL processes, and real-time analytics workflows.
+
+---
+
+### CDC Enable/Disable Utility
+
+**enable_cdc.py** - Interactive tool to manage CDC on SQL Server tables.
+
+#### Features
+- 🔍 Check CDC status on database and tables
+- ✅ Enable CDC on database and all banking tables
+- ❌ Disable CDC on tables and database
+- 📋 List all CDC-enabled tables
+
+#### Usage
+
+```bash
+python enable_cdc.py
+```
+
+Interactive menu:
+```
+================ CDC STATUS ================
+
+Database CDC enabled: YES
+Tables with CDC enabled (15):
+  • customers
+  • accounts
+  • transactions
+  • ...
+
+============================================
+
+Choose action [enable / disable / exit]:
+```
+
+---
+
+### CDC Data Simulator
+
+**data_generator_mssql.py** - Simulates real-world data changes for CDC testing.
+
+#### Features
+- 🎲 **Mixed operations**: INSERT, UPDATE, DELETE
+- ⚖️ **Configurable weights** for operation types
+- 📊 **Realistic banking mutations**: balance updates, status changes, new records
+- 🔄 **Continuous data evolution** for streaming pipelines
+- 📈 **Operation tracking** with success/failure logs
+
+#### Supported Operations
+
+| Operation Type | Description |
+|------|------------|
+| INSERT_CUSTOMER | Add new customer records |
+| UPDATE_CUSTOMER | Modify customer contact info |
+| INSERT_ACCOUNT | Create new accounts |
+| UPDATE_ACCOUNT | Update account balances |
+| INSERT_TRANSACTION | Generate new transactions |
+| UPDATE_TRANSACTION | Change transaction status |
+| INSERT_CARD | Issue new cards |
+| UPDATE_CARD | Modify card status |
+| INSERT_LOAN | Create new loans |
+| UPDATE_LOAN | Update loan status |
+| INSERT_FRAUD_ALERT | Generate fraud alerts |
+| INSERT_LOGIN | Record user logins |
+
+#### Usage
+
+```bash
+python data_generator_mssql.py
+```
+
+Example output:
+```
+======================================================================
+SIMULATING 20 CDC OPERATIONS
+======================================================================
+
+[1/20] INSERT_CUSTOMER...
+  ➕ Inserted customer: CUST-001234
+
+[2/20] UPDATE_ACCOUNT...
+  ✏️  Updated account balance: ACC-005678 (change: 1250.50)
+
+[3/20] INSERT_TRANSACTION...
+  ➕ Inserted transaction: TXN-789012
+
+...
+
+======================================================================
+OPERATIONS COMPLETE
+======================================================================
+Total Executed: 20
+Successful: 19
+Failed: 1
+======================================================================
+```
+
+#### Configuration
+
+In **config.py**, customize the simulator behavior:
+
+```python
+CONFIG["simulator"] = {
+    "default_num_operations": 20,        # Operations per run
+    "operation_weights": {                # Control operation mix
+        "INSERT_CUSTOMER": 0.10,
+        "UPDATE_ACCOUNT": 0.15,
+        # ... customize weights
+    },
+    "stop_on_error": False               # Continue on failures
+}
+```
+
+---
+
 ## 🎯 Use Cases
 
 - Data engineering portfolios
 - ETL & pipeline validation
+- **CDC & streaming data testing**
+- **Real-time analytics validation**
 - SQL performance benchmarking
 - Application testing
 - Security & validation testing
 - BI & analytics demos
+- **Data pipeline stress testing**
 
 ---
 
@@ -332,6 +483,8 @@ class CustomGenerator:
 ```bash
 python main.py
 python import_to_mssql.py
+python enable_cdc.py
+python data_generator_mssql.py
 rm -rf output/*
 ```
 
