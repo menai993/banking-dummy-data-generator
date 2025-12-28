@@ -45,24 +45,24 @@ dummy_banking_data/
 │   ├── employee_generator.py
 │   ├── merchant_generator.py
 │   ├── audit_log_generator.py
-    ├── fraud_alert_generator.py
-    ├── user_login_generator.py
-    ├── investment_account_generator.py
+│   ├── fraud_alert_generator.py
+│   ├── user_login_generator.py
+│   ├── investment_account_generator.py
 │   └── exchange_rate_generator.py
 │
-├── config/
+│── config/
 │   └── create_statements.py      # Centralized DDL definitions
 │
-├── utils/
+│── utils/
 │   └── helpers.py                # Export & bad data utilities
 │
-├── main.py                       # Orchestration script
-├── config.py                     # Central configuration
-├── import_to_mssql.py            # MSSQL importer
-├── data_generator_mssql.py       # CDC data simulator
-├── enable_cdc.py                 # CDC enable/disable utility
-├── requirements.txt
-├── README.md
+│── main.py                       # Orchestration script
+│── config.py                     # Central configuration
+│── import_to_mssql.py            # MSSQL importer
+│── data_generator_mssql.py       # CDC data simulator
+│── enable_cdc.py                 # CDC enable/disable utility
+│── requirements.txt
+│── README.md
 └── output/                       # Generated files
 ```
 
