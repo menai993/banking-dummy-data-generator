@@ -18,6 +18,7 @@ This project generates **realistic, relational banking datasets** with **control
 - 🎲 **Live data mutation testing** for CDC/ETL validation
 - 🧱 Modular & **easily extensible architecture**
 - 🎯 Ideal for **portfolios, demos, testing & learning**
+- 🖥️ **Web UI interface** built with Streamlit for easy access to all features
 
 ---
 
@@ -57,12 +58,14 @@ dummy_banking_data/
 │   └── helpers.py                # Export & bad data utilities
 │
 │── main.py                       # Orchestration script
+│── app.py                        # Streamlit Web UI
 │── config.py                     # Central configuration
 │── import_to_mssql.py            # MSSQL importer
 │── data_generator_mssql.py       # CDC data simulator
 │── enable_cdc.py                 # CDC enable/disable utility
 │── requirements.txt
 │── README.md
+│── STREAMLIT_UI_README.md        # Web UI user guide
 └── output/                       # Generated files
 ```
 
@@ -167,7 +170,26 @@ CONFIG["simulator"] = {
 
 ---
 
-### 3️⃣ Generate Data
+### 3️⃣ Using the Web UI (Recommended)
+
+**Launch the Streamlit web interface for easy access to all features:**
+
+```bash
+streamlit run app.py
+```
+
+The web UI will open in your browser at `http://localhost:8501` and provides:
+
+- 📊 **Data Generation** - Configure and generate banking data with visual controls
+- 📥 **MSSQL Import** - Import data to SQL Server with progress tracking
+- 🔄 **CDC Management** - Enable/disable CDC with status monitoring
+- ⚡ **CDC Simulation** - Simulate data changes with configurable operations
+
+For detailed Web UI documentation, see **[STREAMLIT_UI_README.md](STREAMLIT_UI_README.md)**
+
+---
+
+### 3️⃣ Generate Data (Command Line)
 
 ```bash
 python main.py
