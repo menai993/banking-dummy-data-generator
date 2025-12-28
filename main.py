@@ -19,7 +19,7 @@ from generators.investment_account_generator import InvestmentAccountGenerator
 from generators.fraud_alert_generator import FraudAlertGenerator
 from generators.user_login_generator import UserLoginGenerator
 from utils.helpers import DataExporter
-import config
+from config import settings
 
 def calculate_statistics(all_data):
     """Calculate and display statistics about bad data"""
@@ -64,7 +64,7 @@ def generate_bad_data_report(all_data, output_dir="output"):
     
     report = {
         "generation_date": datetime.now().isoformat(),
-        "configuration": config.CONFIG["bad_data_percentage"],
+        "configuration": settings.CONFIG["bad_data_percentage"],
         "tables": {}
     }
     
@@ -100,12 +100,12 @@ def main():
     start_time = time.time()
     
     # Get configuration
-    bad_data_config = config.CONFIG["bad_data_percentage"]
+    bad_data_config = settings.CONFIG["bad_data_percentage"]
     
     # Step 1: Generate Customers
     print(f"\n[1/14] Generating customers ({bad_data_config['customers']*100}% bad data)...")
     customer_gen = CustomerGenerator(
-        config.CONFIG["num_customers"],
+        settings.CONFIG["num_customers"],
         bad_data_config["customers"]
     )
     customers, customer_details = customer_gen.generate()
@@ -117,8 +117,8 @@ def main():
         bad_data_config["accounts"]
     )
     accounts = account_gen.generate(
-        config.CONFIG["accounts_per_customer_min"],
-        config.CONFIG["accounts_per_customer_max"]
+        settings.CONFIG["accounts_per_customer_min"],
+        settings.CONFIG["accounts_per_customer_max"]
     )
     
     # Step 3: Generate Cards
@@ -129,8 +129,8 @@ def main():
         bad_data_config["cards"]
     )
     cards = card_gen.generate(
-        config.CONFIG["cards_per_customer_min"],
-        config.CONFIG["cards_per_customer_max"]
+        settings.CONFIG["cards_per_customer_min"],
+        settings.CONFIG["cards_per_customer_max"]
     )
     
     # Step 4: Generate Transactions
@@ -141,8 +141,8 @@ def main():
         bad_data_config["transactions"]
     )
     transactions = transaction_gen.generate(
-        config.CONFIG["transactions_per_account_min"],
-        config.CONFIG["transactions_per_account_max"]
+        settings.CONFIG["transactions_per_account_min"],
+        settings.CONFIG["transactions_per_account_max"]
     )
     
     # Step 5: Prepare and Export Data
@@ -158,89 +158,90 @@ def main():
     }
     
     # Step 6: Generate Branches
-    print(f"\n[6/14] Generating branches ({config.CONFIG['bad_data_percentage']['branches']*100}% bad data)...")
+    print(f"\n[6/14] Generating branches ({settings.CONFIG['bad_data_percentage']['branches']*100}% bad data)...")
     branch_gen = BranchGenerator(
-        config.CONFIG["num_branches"],
-        config.CONFIG["bad_data_percentage"]["branches"]
+        settings.CONFIG["num_branches"],
+        settings.CONFIG["bad_data_percentage"]["branches"]
     )
     branches = branch_gen.generate()
     
     # Step 7: Generate Employees
-    print(f"\n[7/14] Generating employees ({config.CONFIG['bad_data_percentage']['employees']*100}% bad data)...")
+    print(f"\n[7/14] Generating employees ({settings.CONFIG['bad_data_percentage']['employees']*100}% bad data)...")
     employee_gen = EmployeeGenerator(
         branches,
-        config.CONFIG["num_employees"],
-        config.CONFIG["bad_data_percentage"]["employees"]
+        settings.CONFIG["num_employees"],
+        settings.CONFIG["bad_data_percentage"]["employees"]
     )
     employees = employee_gen.generate()
     
     # Step 8: Generate Loans
-    print(f"\n[8/14] Generating loans ({config.CONFIG['bad_data_percentage']['loans']*100}% bad data)...")
+    print(f"\n[8/14] Generating loans ({settings.CONFIG['bad_data_percentage']['loans']*100}% bad data)...")
     loan_gen = LoanGenerator(
         customers,
         accounts,
-        config.CONFIG["bad_data_percentage"]["loans"]
+        settings.CONFIG["bad_data_percentage"]["loans"]
     )
     loans, loan_payments = loan_gen.generate(
-        config.CONFIG["loans_per_customer_min"],
-        config.CONFIG["loans_per_customer_max"]
+        settings.CONFIG["loans_per_customer_min"],
+        settings.CONFIG["loans_per_customer_max"]
     )
     
     # Step 9: Generate Merchants
-    print(f"\n[9/14] Generating merchants ({config.CONFIG['bad_data_percentage']['merchants']*100}% bad data)...")
+    print(f"\n[9/14] Generating merchants ({settings.CONFIG['bad_data_percentage']['merchants']*100}% bad data)...")
     merchant_gen = MerchantGenerator(
-        config.CONFIG["num_merchants"],
-        config.CONFIG["bad_data_percentage"]["merchants"]
+        settings.CONFIG["num_merchants"],
+        settings.CONFIG["bad_data_percentage"]["merchants"]
     )
     merchants = merchant_gen.generate()
     
     # Step 10: Generate Audit Logs
-    print(f"\n[10/14] Generating audit logs ({config.CONFIG['bad_data_percentage']['audit_logs']*100}% bad data)...")
+    print(f"\n[10/14] Generating audit logs ({settings.CONFIG['bad_data_percentage']['audit_logs']*100}% bad data)...")
     # Combine customers and employees for audit logs
     all_users = customers + employees
     audit_gen = AuditLogGenerator(
         all_users,
-        config.CONFIG["bad_data_percentage"]["audit_logs"]
+        settings.CONFIG["bad_data_percentage"]["audit_logs"]
     )
     audit_logs = audit_gen.generate(
-        config.CONFIG["audit_logs_per_user_min"],
-        config.CONFIG["audit_logs_per_user_max"]
+        settings.CONFIG["audit_logs_per_user_min"],
+        settings.CONFIG["audit_logs_per_user_max"]
     )
     
     # Step 11: Generate Exchange Rates
-    print(f"\n[11/14] Generating exchange rates ({config.CONFIG['bad_data_percentage']['exchange_rates']*100}% bad data)...")
+    print(f"\n[11/14] Generating exchange rates ({settings.CONFIG['bad_data_percentage']['exchange_rates']*100}% bad data)...")
     exchange_gen = ExchangeRateGenerator(
-        config.CONFIG["exchange_rate_days"],
-        config.CONFIG["bad_data_percentage"]["exchange_rates"]
+        settings.CONFIG["exchange_rate_days"],
+        settings.CONFIG["bad_data_percentage"]["exchange_rates"]
     )
     exchange_rates = exchange_gen.generate()
     
 
     # Generate investment accounts
-    print(f"[12/14] Generating investment accounts ({config.CONFIG['bad_data_percentage']['investment_accounts']*100}% bad data)...")
+    print(f"[12/14] Generating investment accounts ({settings.CONFIG['bad_data_percentage']['investment_accounts']*100}% bad data)...")
     investment_gen = InvestmentAccountGenerator(
-        config.CONFIG.get("num_investment_accounts"),
-        config.CONFIG["bad_data_percentage"]["investment_accounts"],
+        settings.CONFIG.get("num_investment_accounts"),
+        settings.CONFIG["bad_data_percentage"]["investment_accounts"],
         customers,
         accounts
     )
     investment_accounts = investment_gen.generate()
 
     # Generate fraud alerts
-    print(f"[13/14] Generating fraud alerts ({config.CONFIG['bad_data_percentage']['fraud_alerts']*100}% bad data)...")
+    print(f"[13/14] Generating fraud alerts ({settings.CONFIG['bad_data_percentage']['fraud_alerts']*100}% bad data)...")
     fraud_gen = FraudAlertGenerator(
-        config.CONFIG.get("fraud_alerts_per_transaction", 0.05),
-        config.CONFIG["bad_data_percentage"]["fraud_alerts"],
-        transactions
+        settings.CONFIG.get("fraud_alerts_per_transaction", 0.05),
+        settings.CONFIG["bad_data_percentage"]["fraud_alerts"],
+        transactions,
+        accounts
     )
     fraud_alerts = fraud_gen.generate()
 
     # Generate user logins
-    print(f"[14/14] Generating user logins ({config.CONFIG['bad_data_percentage']['user_logins']*100}% bad data)...")
+    print(f"[14/14] Generating user logins ({settings.CONFIG['bad_data_percentage']['user_logins']*100}% bad data)...")
     login_gen = UserLoginGenerator(
-        config.CONFIG.get("user_logins_per_customer_min", 8),
-        config.CONFIG.get("user_logins_per_customer_max", 30),
-        config.CONFIG["bad_data_percentage"]["user_logins"],
+        settings.CONFIG.get("user_logins_per_customer_min", 8),
+        settings.CONFIG.get("user_logins_per_customer_max", 30),
+        settings.CONFIG["bad_data_percentage"]["user_logins"],
         customers
     )
     user_logins = login_gen.generate()
@@ -263,17 +264,17 @@ def main():
     exporter = DataExporter()
     
     # Export based on configured formats
-    if "csv" in config.CONFIG["output_formats"]:
+    if "csv" in settings.CONFIG["output_formats"]:
         print("\nExporting to CSV files...")
         for table_name, data in all_data.items():
             if data:
                 exporter.export_to_csv(data, f"{table_name}.csv")
     
-    if "sql" in config.CONFIG["output_formats"]:
+    if "sql" in settings.CONFIG["output_formats"]:
         print("\nGenerating SQL files...")
         exporter.export_to_sql_files(all_data)
 
-    if "excel" in config.CONFIG["output_formats"]:
+    if "excel" in settings.CONFIG["output_formats"]:
         print("\nExporting to Excel...")
         
         # Remove bad data indicators for Excel export (cleaner view)
@@ -303,7 +304,7 @@ def main():
     for table, percentage in bad_data_config.items():
         print(f"  {table:20} {percentage*100:5.1f}%")
     
-    print(f"\nOutput saved in '{config.CONFIG['output_directory']}' directory")
+    print(f"\nOutput saved in '{settings.CONFIG['output_directory']}' directory")
     print("=" * 80)
 
 if __name__ == "__main__":

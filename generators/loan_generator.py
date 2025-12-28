@@ -199,7 +199,9 @@ class LoanGenerator:
                 loan["bad_data_type"] = "inconsistent_data"
             
             elif bad_data_type == "invalid_format":
-                loan["interest_rate"] = "invalid"
+                # Keep value SQL-insertable (DECIMAL) while still marking as invalid.
+                # Using an unrealistic interest rate avoids conversion failures during MSSQL import.
+                loan["interest_rate"] = 999.9999
                 loan["is_bad_data"] = True
                 loan["bad_data_type"] = "invalid_format"
             
@@ -246,8 +248,10 @@ class LoanGenerator:
                 payment["bad_data_type"] = "inconsistent_data"
             
             elif bad_data_type == "invalid_format":
+                # Keep value SQL-insertable (DATE) while still marking as invalid.
+                # Use a far-future date rather than an unparsable date string.
                 if "payment_date" in payment:
-                    payment["payment_date"] = "2025-13-01"  # Invalid date
+                    payment["payment_date"] = "9999-12-31"
                 payment["is_bad_data"] = True
                 payment["bad_data_type"] = "invalid_format"
         
@@ -337,3 +341,12 @@ class LoanGenerator:
         print(f"Generated {len(self.loan_payments)} loan payments")
         
         return self.loans, self.loan_payments
+
+
+def generate_loan(customer_id: str, account_id: str):
+    """Compatibility shim: generate a single loan for given customer and account."""
+    customer = {"customer_id": customer_id, "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    account = {"account_id": account_id, "customer_id": customer_id, "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    gen = LoanGenerator([customer], [account])
+    loans, _ = gen.generate(1, 1)
+    return loans[0] if loans else None

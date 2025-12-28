@@ -133,3 +133,14 @@ class AccountGenerator:
         
         print(f"Generated {len(self.accounts)} accounts ({bad_account_count} with bad data)")
         return self.accounts
+
+
+def generate_account(customer_id: str):
+    """Compatibility shim: generate a single account for a customer_id."""
+    customer = {
+        "customer_id": customer_id,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    gen = AccountGenerator([customer])
+    accounts = gen.generate(1, 1)
+    return accounts[0] if accounts else None

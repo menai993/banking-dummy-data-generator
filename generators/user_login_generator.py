@@ -155,3 +155,11 @@ class UserLoginGenerator:
         
         print(f"Generated {len(self.user_logins)} user login records ({bad_login_count} with bad data)")
         return self.user_logins
+
+
+def generate_user_login(customer_id: str):
+    """Compatibility shim: generate a single user login record for given customer."""
+    customer = {"customer_id": customer_id}
+    gen = UserLoginGenerator(customers=[customer])
+    logins = gen.generate()
+    return logins[0] if logins else None

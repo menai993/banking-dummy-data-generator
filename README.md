@@ -14,8 +14,11 @@ This project generates **realistic, relational banking datasets** with **control
 - 📤 Export to **CSV, SQL**
 - 🗄️ Direct **MSSQL import with quality logging**
 - 📊 Automatic **bad data analytics report**
+- 🔄 **CDC (Change Data Capture) simulation & management**
+- 🎲 **Live data mutation testing** for CDC/ETL validation
 - 🧱 Modular & **easily extensible architecture**
 - 🎯 Ideal for **portfolios, demos, testing & learning**
+- 🖥️ **Web UI interface** built with Streamlit for easy access to all features
 
 ---
 
@@ -43,19 +46,26 @@ dummy_banking_data/
 │   ├── employee_generator.py
 │   ├── merchant_generator.py
 │   ├── audit_log_generator.py
-    ├── fraud_alert_generator.py
-    ├── user_login_generator.py
-    ├── investment_account_generator.py
+│   ├── fraud_alert_generator.py
+│   ├── user_login_generator.py
+│   ├── investment_account_generator.py
 │   └── exchange_rate_generator.py
+│
+│── config/
+│   └── create_statements.py      # Centralized DDL definitions
 │
 │── utils/
 │   └── helpers.py                # Export & bad data utilities
 │
 │── main.py                       # Orchestration script
-│── config.py                     # Central configuration
+│── app.py                        # Streamlit Web UI
+│── config/settings.py            # Central configuration
 │── import_to_mssql.py            # MSSQL importer
+│── data_generator_mssql.py       # CDC data simulator
+│── enable_cdc.py                 # CDC enable/disable utility
 │── requirements.txt
 │── README.md
+│── STREAMLIT_UI_README.md        # Web UI user guide
 └── output/                       # Generated files
 ```
 
@@ -76,70 +86,43 @@ python --version   # Python 3.7+
 
 ### 2️⃣ Configuration
 
-Edit **config.py** to control volume, relationships, output formats, and bad data ratios.
+Edit **config/settings.py** to control volume, relationships, output formats, and bad data ratios.
 
 ```python
-CONFIG = {
-    # Volume controls
-    "num_customers": 1000,
-    "num_branches": 50,
-    "num_employees": 200,
-    "num_merchants": 500,
-    "num_investment_accounts": 300,           
-    
-    # Relationship controls
-    "accounts_per_customer_min": 1,
-    "accounts_per_customer_max": 3,
-    "cards_per_customer_min": 0,
-    "cards_per_customer_max": 2,
-    "transactions_per_account_min": 5,
-    "transactions_per_account_max": 50,
-    "fraud_alerts_per_transaction": 0.05,     
-    "user_logins_per_customer_min": 8,        
-    "user_logins_per_customer_max": 30,       
-    "exchange_rate_days": 365,
-    "audit_logs_per_user_min": 5,
-    "audit_logs_per_user_max": 50,
-    "loans_per_customer_min": 0,
-    "loans_per_customer_max": 2,
+from config import settings
 
-    # Output options: csv, sql, -- soon excel will be available
-    "output_formats": ["csv", "sql"],  
-    "output_directory": "output",
+# All configuration is now in settings.CONFIG
+CONFIG = settings.CONFIG
 
-    # Bad data configuration
-    "bad_data_percentage": {
-        "customers": 0.20,
-        "accounts": 0.15,
-        "cards": 0.25,
-        "transactions": 0.10,
-        "branches": 0.05,
-        "employees": 0.08,
-        "merchants": 0.12,
-        "loans": 0.15,
-        "loan_payments": 0.20,
-        "audit_logs": 0.05,
-        "exchange_rates": 0.03,
-        "investment_accounts": 0.12,          
-        "fraud_alerts": 0.18,                 
-        "user_logins": 0.08                   
-    },
-
-    # Types of bad data to generate
-    "bad_data_types": {
-        "missing_data": True,
-        "invalid_format": True,
-        "out_of_range": True,
-        "inconsistent_data": True,
-        "duplicate_data": False,
-        "malformed_data": True
-    }
-}
+# Example: adjust values in config/settings.py
+CONFIG["num_customers"] = 1000
+CONFIG["output_directory"] = "output"
+# ...
+```
 ```
 
 ---
 
-### 3️⃣ Generate Data
+### 3️⃣ Using the Web UI (Recommended)
+
+**Launch the Streamlit web interface for easy access to all features:**
+
+```bash
+python -m streamlit run app.py
+```
+
+The web UI will open in your browser at `http://localhost:8501` and provides:
+
+- 📊 **Data Generation** - Configure and generate banking data with visual controls
+- 📥 **MSSQL Import** - Import data to SQL Server with progress tracking
+- 🔄 **CDC Management** - Enable/disable CDC with status monitoring
+- ⚡ **CDC Simulation** - Simulate data changes with configurable operations
+
+For detailed Web UI documentation, see **[STREAMLIT_UI_README.md](STREAMLIT_UI_README.md)**
+
+---
+
+### 3️⃣ Generate Data (Command Line)
 
 ```bash
 python main.py
@@ -261,20 +244,25 @@ output/sql/
 
 ### Configure Connection
 
-Edit **config.py**:
+Edit **config/settings.py**:
 
 ```python
+from config import settings
+
+# In config/settings.py, update the MSSQL import section:
+CONFIG = settings.CONFIG
 CONFIG["mssql_import"] = {
     "server": "localhost",                          # Your SQL Server
     "database": "YourDatabase",                     # Your database name
     "username": "YourUsername",                     # SQL Server login
     "password": "YourPassword",                     # SQL Server password
     "data_directory": "output",                     # Directory with CSV files
-    "enable_quality_tracking": True,                # Quality tracking enablement
-    "create_views": True,                           # Create database views
-    "batch_size": 1000,                             # Rows per batch insert
-    "override_batch_size_based_on_file_size": True  # Adjust batch size based on file size
+    "enable_quality_tracking": True,                  # Quality tracking enablement
+    "create_views": True,                             # Create database views
+    "batch_size": 1000,                               # Rows per batch insert
+    "override_batch_size_based_on_file_size": True    # Adjust batch size based on file size
 }
+```
 ```
 
 ### Run Import
@@ -289,14 +277,142 @@ Imported tables include:
 
 ---
 
+## 🔄 CDC (Change Data Capture) Features
+
+### Overview
+
+The project includes **CDC simulation and management tools** for testing data pipelines, ETL processes, and real-time analytics workflows.
+
+---
+
+### CDC Enable/Disable Utility
+
+**enable_cdc.py** - Interactive tool to manage CDC on SQL Server tables.
+
+#### Features
+- 🔍 Check CDC status on database and tables
+- ✅ Enable CDC on database and all banking tables
+- ❌ Disable CDC on tables and database
+- 📋 List all CDC-enabled tables
+
+#### Usage
+
+```bash
+python enable_cdc.py
+```
+
+Interactive menu:
+```
+================ CDC STATUS ================
+
+Database CDC enabled: YES
+Tables with CDC enabled (15):
+  • customers
+  • accounts
+  • transactions
+  • ...
+
+============================================
+
+Choose action [enable / disable / exit]:
+```
+
+---
+
+### CDC Data Simulator
+
+**data_generator_mssql.py** - Simulates real-world data changes for CDC testing.
+
+#### Features
+- 🎲 **Mixed operations**: INSERT, UPDATE, DELETE
+- ⚖️ **Configurable weights** for operation types
+- 📊 **Realistic banking mutations**: balance updates, status changes, new records
+- 🔄 **Continuous data evolution** for streaming pipelines
+- 📈 **Operation tracking** with success/failure logs
+
+#### Supported Operations
+
+| Operation Type | Description |
+|------|------------|
+| INSERT_CUSTOMER | Add new customer records |
+| UPDATE_CUSTOMER | Modify customer contact info |
+| INSERT_ACCOUNT | Create new accounts |
+| UPDATE_ACCOUNT | Update account balances |
+| INSERT_TRANSACTION | Generate new transactions |
+| UPDATE_TRANSACTION | Change transaction status |
+| INSERT_CARD | Issue new cards |
+| UPDATE_CARD | Modify card status |
+| INSERT_LOAN | Create new loans |
+| UPDATE_LOAN | Update loan status |
+| INSERT_FRAUD_ALERT | Generate fraud alerts |
+| INSERT_LOGIN | Record user logins |
+
+#### Usage
+
+```bash
+python data_generator_mssql.py
+```
+
+Example output:
+```
+======================================================================
+SIMULATING 20 CDC OPERATIONS
+======================================================================
+
+[1/20] INSERT_CUSTOMER...
+  ➕ Inserted customer: CUST-001234
+
+[2/20] UPDATE_ACCOUNT...
+  ✏️  Updated account balance: ACC-005678 (change: 1250.50)
+
+[3/20] INSERT_TRANSACTION...
+  ➕ Inserted transaction: TXN-789012
+
+...
+
+======================================================================
+OPERATIONS COMPLETE
+======================================================================
+Total Executed: 20
+Successful: 19
+Failed: 1
+======================================================================
+```
+
+#### Configuration
+
+In **config/settings.py**, customize the simulator behavior:
+
+```python
+from config import settings
+
+# In config/settings.py, update the simulator section:
+CONFIG = settings.CONFIG
+CONFIG["simulator"] = {
+    "default_num_operations": 20,        # Operations per run
+    "operation_weights": {                # Control operation mix
+        "INSERT_CUSTOMER": 0.10,
+        "UPDATE_ACCOUNT": 0.15,
+        # ... customize weights
+    },
+    "stop_on_error": False               # Continue on failures
+}
+```
+```
+
+---
+
 ## 🎯 Use Cases
 
 - Data engineering portfolios
 - ETL & pipeline validation
+- **CDC & streaming data testing**
+- **Real-time analytics validation**
 - SQL performance benchmarking
 - Application testing
 - Security & validation testing
 - BI & analytics demos
+- **Data pipeline stress testing**
 
 ---
 
@@ -332,6 +448,8 @@ class CustomGenerator:
 ```bash
 python main.py
 python import_to_mssql.py
+python enable_cdc.py
+python data_generator_mssql.py
 rm -rf output/*
 ```
 

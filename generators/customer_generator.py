@@ -261,3 +261,14 @@ class CustomerGenerator:
         print(f"Generated {len(self.customer_details)} customer details ({bad_detail_count} with bad data)")
         
         return self.customers, self.customer_details
+
+
+def generate_customer():
+    """Convenience function to generate a single customer record.
+
+    Returns the generated customer dict. Keeps backward compatibility
+    with code expecting `generate_customer()` at module level.
+    """
+    gen = CustomerGenerator(num_customers=1)
+    customers, _ = gen.generate()
+    return customers[0] if customers else None
