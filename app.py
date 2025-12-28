@@ -15,6 +15,8 @@ import time
 from datetime import datetime
 import pandas as pd
 import sys
+import traceback
+import random
 
 # Add current directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -446,7 +448,6 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
         
     except Exception as e:
         st.error(f"❌ Error during data generation: {str(e)}")
-        import traceback
         st.code(traceback.format_exc())
 
 def show_mssql_import_page():
@@ -603,7 +604,6 @@ def import_data_to_mssql(server, database, username, password, data_directory,
         
     except Exception as e:
         st.error(f"❌ Error during import: {str(e)}")
-        import traceback
         st.code(traceback.format_exc())
 
 def show_cdc_management_page():
@@ -708,7 +708,6 @@ def enable_cdc(server, database, username, password):
             
         except Exception as e:
             st.error(f"❌ Error enabling CDC: {str(e)}")
-            import traceback
             st.code(traceback.format_exc())
 
 def disable_cdc(server, database, username, password):
@@ -747,7 +746,6 @@ def disable_cdc(server, database, username, password):
             
         except Exception as e:
             st.error(f"❌ Error disabling CDC: {str(e)}")
-            import traceback
             st.code(traceback.format_exc())
 
 def show_cdc_simulation_page():
@@ -839,11 +837,6 @@ def run_cdc_simulation(server, database, username, password, num_operations, ope
         success_count = 0
         
         # Prepare weighted operations
-        from data_generator_mssql import (
-            customer_generator, account_generator, transaction_generator,
-            card_generator, loan_generator, fraud_alert_generator, user_login_generator
-        )
-        
         operations = [
             ('INSERT_CUSTOMER', operation_weights['INSERT_CUSTOMER'], simulator.insert_new_customer),
             ('UPDATE_CUSTOMER', operation_weights['UPDATE_CUSTOMER'], simulator.update_customer_contact),
@@ -858,8 +851,6 @@ def run_cdc_simulation(server, database, username, password, num_operations, ope
             ('INSERT_FRAUD_ALERT', operation_weights['INSERT_FRAUD_ALERT'], simulator.insert_fraud_alert),
             ('INSERT_LOGIN', operation_weights['INSERT_LOGIN'], simulator.insert_user_login),
         ]
-        
-        import random
         
         for i in range(num_operations):
             status_text.text(f"Running operation {i+1}/{num_operations}...")
@@ -909,7 +900,6 @@ def run_cdc_simulation(server, database, username, password, num_operations, ope
         
     except Exception as e:
         st.error(f"❌ Error during simulation: {str(e)}")
-        import traceback
         st.code(traceback.format_exc())
 
 if __name__ == "__main__":
