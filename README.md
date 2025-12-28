@@ -31,7 +31,7 @@ dummy_banking_data/
 │   ├── addresses.py              # Address components
 │   ├── banking_terms.py          # Banking terminology
 │   ├── banking_products.py       # Account & loan types
-│   ├── fraud_constants.py
+│   ├── fraud_constants.py 
 │   ├── investment_products.py
 │   └── login_constants.py
 
@@ -52,6 +52,7 @@ dummy_banking_data/
 │   └── exchange_rate_generator.py
 │
 │── config/
+│   ├── settings.py               # Central configuration
 │   └── create_statements.py      # Centralized DDL definitions
 │
 │── utils/
@@ -59,7 +60,6 @@ dummy_banking_data/
 │
 │── main.py                       # Orchestration script
 │── app.py                        # Streamlit Web UI
-│── config/settings.py            # Central configuration
 │── import_to_mssql.py            # MSSQL importer
 │── data_generator_mssql.py       # CDC data simulator
 │── enable_cdc.py                 # CDC enable/disable utility
@@ -346,6 +346,7 @@ Choose action [enable / disable / exit]:
 | UPDATE_LOAN | Update loan status |
 | INSERT_FRAUD_ALERT | Generate fraud alerts |
 | INSERT_LOGIN | Record user logins |
+...
 
 #### Usage
 
