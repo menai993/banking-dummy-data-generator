@@ -6,7 +6,6 @@ Streamlit Web Interface for Banking Dummy Data Generator
 import streamlit as st
 import pandas as pd
 import time
-from datetime import datetime
 from generators.customer_generator import CustomerGenerator
 from generators.account_generator import AccountGenerator
 from generators.card_generator import CardGenerator
