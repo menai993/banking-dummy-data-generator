@@ -81,7 +81,42 @@ python --version   # Python 3.7+
 
 ---
 
-### 2️⃣ Configuration
+### 2️⃣ Usage Options
+
+#### Option A: Streamlit Web Interface (Recommended) 🌐
+
+Run the interactive web interface for easy configuration and data generation:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+The web interface provides:
+- 🎯 **Interactive Configuration**: Adjust all parameters via UI sliders and inputs
+- 📊 **Real-time Statistics**: View generation progress and data quality metrics
+- 👀 **Data Preview**: Preview generated data before downloading
+- 💾 **Multiple Export Formats**: Choose CSV, SQL, or Excel with one click
+- 📈 **Visual Dashboard**: See bad data distribution and table statistics
+
+**Features:**
+- Configure volume controls (customers, branches, employees, etc.)
+- Set relationship controls (accounts per customer, cards per customer, etc.)
+- Adjust bad data percentages for each table individually
+- Select export formats and output directory
+- Real-time progress tracking
+- Interactive data preview and download
+
+#### Option B: Command Line Interface
+
+Run the traditional command-line script:
+
+```bash
+python main.py
+```
+
+---
+
+### 3️⃣ Configuration (for CLI)
 
 Edit **config.py** to control volume, relationships, output formats, and bad data ratios.
 
@@ -167,7 +202,7 @@ CONFIG["simulator"] = {
 
 ---
 
-### 3️⃣ Generate Data
+### 4️⃣ Generate Data (for CLI)
 
 ```bash
 python main.py
@@ -179,6 +214,46 @@ Console output example:
 [1/14] Generating customers (20.0% bad data)...
 Generated 1000 customers (200 bad records)
 ```
+
+---
+
+---
+
+## 🌐 Streamlit Web Interface
+
+The project now includes an interactive web interface built with Streamlit for easy data generation and configuration.
+
+### Screenshots
+
+**Main Interface:**
+![Streamlit Main Interface](https://github.com/user-attachments/assets/c3e4d2d1-1934-4bb0-bf8d-5f6fb7190997)
+
+**Configuration Panel with Bad Data Settings:**
+![Configuration Panel](https://github.com/user-attachments/assets/0bf82894-291c-4be7-9879-e60b49309e20)
+
+### Key Features
+
+- **📊 Volume Controls**: Set the number of customers, branches, employees, merchants, and investment accounts
+- **🔗 Relationship Controls**: Configure relationships between entities using intuitive sliders
+- **⚠️ Bad Data Configuration**: Fine-tune bad data percentages for each table (0-100%)
+- **💾 Export Options**: Choose between CSV, SQL, and Excel formats
+- **📈 Live Statistics**: View real-time generation progress and data quality metrics
+- **👀 Data Preview**: Preview generated tables before downloading
+- **📥 Direct Download**: Download individual tables as CSV files
+- **📊 Quality Dashboard**: See bad data distribution across all tables
+
+### How to Use
+
+1. **Launch the app**: `streamlit run streamlit_app.py`
+2. **Configure settings** in the left sidebar:
+   - Set volume controls (number of records)
+   - Adjust relationship controls (records per parent)
+   - Expand "Bad Data Configuration" to set bad data percentages
+   - Select export formats and output directory
+3. **Click "Generate Banking Data"** to start the generation process
+4. **View statistics** including total records, bad data counts, and percentages
+5. **Preview data** in any table using the dropdown selector
+6. **Download** individual tables or access all files in the output directory
 
 ---
 
