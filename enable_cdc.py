@@ -1,7 +1,7 @@
 import pyodbc
 import os
 import importlib.util
-import config
+from config import settings
 from typing import List, Optional
 
 
@@ -22,7 +22,7 @@ else:
 # Connection helpers
 # -------------------------------------------------------
 def get_connection() -> pyodbc.Connection:
-    cfg = config.CONFIG.get("mssql_import")
+    cfg = settings.CONFIG.get("mssql_import")
     if not cfg:
         raise ValueError("Missing CONFIG['mssql_import'] in config.py")
 

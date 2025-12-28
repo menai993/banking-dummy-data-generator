@@ -39,7 +39,7 @@ This will install:
 From the project root directory, run:
 
 ```bash
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
 The application will start and automatically open in your default web browser at `http://localhost:8501`.
@@ -49,7 +49,7 @@ The application will start and automatically open in your default web browser at
 To run on a different port:
 
 ```bash
-streamlit run app.py --server.port 8502
+python -m streamlit run app.py --server.port 8502
 ```
 
 ## Using the Web UI

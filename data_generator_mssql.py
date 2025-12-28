@@ -3,7 +3,7 @@ import random
 from datetime import datetime, timedelta
 from typing import List, Dict, Tuple
 import sys
-from config import CONFIG
+from config import settings
 
 #!/usr/bin/env python3
 """
@@ -38,7 +38,7 @@ class CDCDataSimulator:
         self.cursor = None
         self.operations_log = []
         # Simulator configuration
-        sim_cfg = CONFIG.get("simulator", {})
+        sim_cfg = settings.CONFIG.get("simulator", {})
         self.sql_boolean_as_int = sim_cfg.get("sql_boolean_as_int", True)
         self.default_num_operations = sim_cfg.get("default_num_operations", 20)
         self.operation_weights_cfg = sim_cfg.get("operation_weights", {})
@@ -457,7 +457,7 @@ class CDCDataSimulator:
 
 def main():
     
-    mssql_cfg = CONFIG.get("mssql_import", {})
+    mssql_cfg = settings.CONFIG.get("mssql_import", {})
     if not mssql_cfg:
         print("❌ MSSQL configuration not found in config.py")
         return

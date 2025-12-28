@@ -7,7 +7,7 @@ Supports all 12 tables from the banking data generator
 import pyodbc
 import pandas as pd
 import os
-import config
+from config import settings
 import re
 from datetime import datetime
 from utils.helpers import DataExporter 
@@ -53,7 +53,7 @@ class MSSQLImporter:
         # Use centralized CREATE_STATEMENTS from config/create_statements.py
         from config.create_statements import CREATE_STATEMENTS as create_statements
         
-        if any(value > 0 for value in config.CONFIG["bad_data_percentage"].values()):
+        if any(value > 0 for value in settings.CONFIG["bad_data_percentage"].values()):
             for table_name, sql in create_statements.items():
                 create_statements[table_name] = re.sub(r'VARCHAR\s*\(\s*\d+\s*\)', 'VARCHAR(500)', sql, flags=re.IGNORECASE)
         try:
@@ -130,7 +130,7 @@ class MSSQLImporter:
             except Exception as e:
                 batch_errors += 1
                 csv_line = start_idx + i + 2
-                DataExporter.log_to_txt(f"|{csv_file}| CSV line {csv_line}: " + str(e), config.CONFIG["output_directory"],self.runtime)
+                DataExporter.log_to_txt(f"|{csv_file}| CSV line {csv_line}: " + str(e), settings.CONFIG["output_directory"],self.runtime)
                 continue
         return batch_success, batch_errors
     
@@ -297,8 +297,8 @@ class MSSQLImporter:
             print(f"{'='*70}")
             
             # Adjust batch size based on file size
-            user_requested_batch_size = config.CONFIG["mssql_import"]["batch_size"]
-            override = config.CONFIG["mssql_import"].get("override_batch_size_based_on_file_size")
+            user_requested_batch_size = settings.CONFIG["mssql_import"]["batch_size"]
+            override = settings.CONFIG["mssql_import"].get("override_batch_size_based_on_file_size")
             if not override:
                 batch_size = user_requested_batch_size
             else:
@@ -675,11 +675,11 @@ def main():
     print("=" * 70)
     
     # MSSQL configuration is provided in config.py under CONFIG['mssql_import']
-    mssql_cfg = config.CONFIG.get("mssql_import", {})
+    mssql_cfg = settings.CONFIG.get("mssql_import", {})
 
     if not mssql_cfg:
-        print("No MSSQL configuration found in config.py under CONFIG['mssql_import'].")
-        print("Please add your MSSQL settings to config.py or update the generator config.")
+        print("No MSSQL configuration found in settings.py under CONFIG['mssql_import'].")
+        print("Please add your MSSQL settings to settings.py or update the generator config.")
         return
 
     # Display current configuration

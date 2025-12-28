@@ -22,7 +22,7 @@ import random
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import project modules
-import config
+from config import settings
 from main import (
     CustomerGenerator, AccountGenerator, CardGenerator, TransactionGenerator,
     BranchGenerator, EmployeeGenerator, LoanGenerator, MerchantGenerator,
@@ -31,7 +31,7 @@ from main import (
 )
 from utils.helpers import DataExporter
 from import_to_mssql import MSSQLImporter
-import enable_cdc
+import enable_cdc as enable_cdc_mod
 from data_generator_mssql import CDCDataSimulator
 
 # Page configuration
@@ -161,16 +161,16 @@ def show_home_page():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Customers", f"{config.CONFIG['num_customers']:,}")
-        st.metric("Branches", f"{config.CONFIG['num_branches']:,}")
+        st.metric("Customers", f"{settings.CONFIG['num_customers']:,}")
+        st.metric("Branches", f"{settings.CONFIG['num_branches']:,}")
     
     with col2:
-        st.metric("Employees", f"{config.CONFIG['num_employees']:,}")
-        st.metric("Merchants", f"{config.CONFIG['num_merchants']:,}")
+        st.metric("Employees", f"{settings.CONFIG['num_employees']:,}")
+        st.metric("Merchants", f"{settings.CONFIG['num_merchants']:,}")
     
     with col3:
-        st.metric("Output Directory", config.CONFIG['output_directory'])
-        st.metric("Output Formats", ", ".join(config.CONFIG['output_formats']))
+        st.metric("Output Directory", settings.CONFIG['output_directory'])
+        st.metric("Output Formats", ", ".join(settings.CONFIG['output_formats']))
     
     st.markdown("---")
     st.info("👈 Use the navigation menu on the left to access different features")
@@ -189,23 +189,23 @@ def show_data_generation_page():
         
         with col1:
             num_customers = st.number_input("Number of Customers", min_value=10, max_value=100000, 
-                                          value=config.CONFIG['num_customers'], step=100)
+                                          value=settings.CONFIG['num_customers'], step=100)
             num_branches = st.number_input("Number of Branches", min_value=1, max_value=1000, 
-                                         value=config.CONFIG['num_branches'], step=10)
+                                         value=settings.CONFIG['num_branches'], step=10)
             num_employees = st.number_input("Number of Employees", min_value=1, max_value=10000, 
-                                          value=config.CONFIG['num_employees'], step=50)
+                                          value=settings.CONFIG['num_employees'], step=50)
             num_merchants = st.number_input("Number of Merchants", min_value=1, max_value=10000, 
-                                          value=config.CONFIG['num_merchants'], step=50)
+                                          value=settings.CONFIG['num_merchants'], step=50)
         
         with col2:
             accounts_min = st.number_input("Accounts per Customer (Min)", min_value=0, max_value=10, 
-                                         value=config.CONFIG['accounts_per_customer_min'])
+                                         value=settings.CONFIG['accounts_per_customer_min'])
             accounts_max = st.number_input("Accounts per Customer (Max)", min_value=1, max_value=20, 
-                                         value=config.CONFIG['accounts_per_customer_max'])
+                                         value=settings.CONFIG['accounts_per_customer_max'])
             transactions_min = st.number_input("Transactions per Account (Min)", min_value=0, max_value=100, 
-                                             value=config.CONFIG['transactions_per_account_min'])
+                                             value=settings.CONFIG['transactions_per_account_min'])
             transactions_max = st.number_input("Transactions per Account (Max)", min_value=1, max_value=500, 
-                                             value=config.CONFIG['transactions_per_account_max'])
+                                             value=settings.CONFIG['transactions_per_account_max'])
     
     with tab2:
         st.markdown("#### Bad Data Percentages")
@@ -214,7 +214,7 @@ def show_data_generation_page():
         col1, col2, col3 = st.columns(3)
         
         bad_data_config = {}
-        entities = list(config.CONFIG['bad_data_percentage'].keys())
+        entities = list(settings.CONFIG['bad_data_percentage'].keys())
         
         for i, entity in enumerate(entities):
             col = [col1, col2, col3][i % 3]
@@ -222,7 +222,7 @@ def show_data_generation_page():
                 bad_data_config[entity] = st.slider(
                     f"{entity.replace('_', ' ').title()}", 
                     0.0, 1.0, 
-                    config.CONFIG['bad_data_percentage'][entity],
+                    settings.CONFIG['bad_data_percentage'][entity],
                     0.01,
                     format="%.2f"
                 )
@@ -233,10 +233,10 @@ def show_data_generation_page():
         output_formats = st.multiselect(
             "Output Formats",
             ["csv", "sql", "excel"],
-            default=config.CONFIG['output_formats']
+            default=settings.CONFIG['output_formats']
         )
         
-        output_directory = st.text_input("Output Directory", value=config.CONFIG['output_directory'])
+        output_directory = st.text_input("Output Directory", value=settings.CONFIG['output_directory'])
     
     st.markdown("---")
     
@@ -277,8 +277,8 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
         status_text.text("Generating cards...")
         progress_bar.progress(3/14)
         card_gen = CardGenerator(customers, accounts, bad_data_config['cards'])
-        cards = card_gen.generate(config.CONFIG['cards_per_customer_min'], 
-                                 config.CONFIG['cards_per_customer_max'])
+        cards = card_gen.generate(settings.CONFIG['cards_per_customer_min'], 
+                     settings.CONFIG['cards_per_customer_max'])
         all_data['cards'] = cards
         
         # Step 4: Generate Transactions
@@ -307,8 +307,8 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
         progress_bar.progress(7/14)
         loan_gen = LoanGenerator(customers, accounts, bad_data_config['loans'])
         loans, loan_payments = loan_gen.generate(
-            config.CONFIG['loans_per_customer_min'],
-            config.CONFIG['loans_per_customer_max']
+            settings.CONFIG['loans_per_customer_min'],
+            settings.CONFIG['loans_per_customer_max']
         )
         all_data['loans'] = loans
         all_data['loan_payments'] = loan_payments
@@ -326,8 +326,8 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
         all_users = customers + employees
         audit_gen = AuditLogGenerator(all_users, bad_data_config['audit_logs'])
         audit_logs = audit_gen.generate(
-            config.CONFIG['audit_logs_per_user_min'],
-            config.CONFIG['audit_logs_per_user_max']
+            settings.CONFIG['audit_logs_per_user_min'],
+            settings.CONFIG['audit_logs_per_user_max']
         )
         all_data['audit_logs'] = audit_logs
         
@@ -335,7 +335,7 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
         status_text.text("Generating exchange rates...")
         progress_bar.progress(10/14)
         exchange_gen = ExchangeRateGenerator(
-            config.CONFIG['exchange_rate_days'],
+            settings.CONFIG['exchange_rate_days'],
             bad_data_config['exchange_rates']
         )
         exchange_rates = exchange_gen.generate()
@@ -345,7 +345,7 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
         status_text.text("Generating investment accounts...")
         progress_bar.progress(11/14)
         investment_gen = InvestmentAccountGenerator(
-            config.CONFIG.get("num_investment_accounts"),
+            settings.CONFIG.get("num_investment_accounts"),
             bad_data_config['investment_accounts'],
             customers,
             accounts
@@ -357,7 +357,7 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
         status_text.text("Generating fraud alerts...")
         progress_bar.progress(12/14)
         fraud_gen = FraudAlertGenerator(
-            config.CONFIG.get("fraud_alerts_per_transaction", 0.05),
+            settings.CONFIG.get("fraud_alerts_per_transaction", 0.05),
             bad_data_config['fraud_alerts'],
             transactions
         )
@@ -368,8 +368,8 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
         status_text.text("Generating user logins...")
         progress_bar.progress(13/14)
         login_gen = UserLoginGenerator(
-            config.CONFIG.get("user_logins_per_customer_min", 8),
-            config.CONFIG.get("user_logins_per_customer_max", 30),
+            settings.CONFIG.get("user_logins_per_customer_min", 8),
+            settings.CONFIG.get("user_logins_per_customer_max", 30),
             bad_data_config['user_logins'],
             customers
         )
@@ -458,17 +458,17 @@ def show_mssql_import_page():
     col1, col2 = st.columns(2)
     
     with col1:
-        server = st.text_input("Server", value=config.CONFIG['mssql_import']['server'])
-        database = st.text_input("Database", value=config.CONFIG['mssql_import']['database'])
-        username = st.text_input("Username", value=config.CONFIG['mssql_import']['username'])
+        server = st.text_input("Server", value=settings.CONFIG['mssql_import']['server'])
+        database = st.text_input("Database", value=settings.CONFIG['mssql_import']['database'])
+        username = st.text_input("Username", value=settings.CONFIG['mssql_import']['username'])
     
     with col2:
-        password = st.text_input("Password", type="password", value=config.CONFIG['mssql_import']['password'])
-        data_directory = st.text_input("Data Directory", value=config.CONFIG['mssql_import']['data_directory'])
+        password = st.text_input("Password", type="password", value=settings.CONFIG['mssql_import']['password'])
+        data_directory = st.text_input("Data Directory", value=settings.CONFIG['mssql_import']['data_directory'])
         batch_size = st.number_input("Batch Size", min_value=100, max_value=10000, 
-                                     value=config.CONFIG['mssql_import']['batch_size'], step=100)
+                                     value=settings.CONFIG['mssql_import']['batch_size'], step=100)
     
-    create_views = st.checkbox("Create Database Views", value=config.CONFIG['mssql_import']['create_views'])
+    create_views = st.checkbox("Create Database Views", value=settings.CONFIG['mssql_import']['create_views'])
     
     st.markdown("---")
     
@@ -614,12 +614,12 @@ def show_cdc_management_page():
     col1, col2 = st.columns(2)
     
     with col1:
-        server = st.text_input("Server", value=config.CONFIG['mssql_import']['server'], key="cdc_server")
-        database = st.text_input("Database", value=config.CONFIG['mssql_import']['database'], key="cdc_database")
+        server = st.text_input("Server", value=settings.CONFIG['mssql_import']['server'], key="cdc_server")
+        database = st.text_input("Database", value=settings.CONFIG['mssql_import']['database'], key="cdc_database")
     
     with col2:
-        username = st.text_input("Username", value=config.CONFIG['mssql_import']['username'], key="cdc_username")
-        password = st.text_input("Password", type="password", value=config.CONFIG['mssql_import']['password'], key="cdc_password")
+        username = st.text_input("Username", value=settings.CONFIG['mssql_import']['username'], key="cdc_username")
+        password = st.text_input("Password", type="password", value=settings.CONFIG['mssql_import']['password'], key="cdc_password")
     
     st.markdown("---")
     
@@ -643,17 +643,17 @@ def show_cdc_management_page():
 def check_cdc_status(server, database, username, password):
     """Check CDC status"""
     try:
-        conn = enable_cdc.get_connection()
+        conn = enable_cdc_mod.get_connection()
         cursor = conn.cursor()
         
-        db_enabled = enable_cdc.is_cdc_enabled_db(cursor)
+        db_enabled = enable_cdc_mod.is_cdc_enabled_db(cursor)
         
         st.markdown("### 📊 CDC Status")
         
         if db_enabled:
             st.success(f"✅ CDC is **ENABLED** on database: {database}")
             
-            enabled_tables = enable_cdc.get_enabled_tables(cursor)
+            enabled_tables = enable_cdc_mod.get_enabled_tables(cursor)
             
             if enabled_tables:
                 st.markdown(f"#### Enabled Tables ({len(enabled_tables)})")
@@ -677,13 +677,13 @@ def enable_cdc(server, database, username, password):
     with st.spinner("Enabling CDC..."):
         try:
             # Update config temporarily
-            original_config = config.CONFIG['mssql_import'].copy()
-            config.CONFIG['mssql_import']['server'] = server
-            config.CONFIG['mssql_import']['database'] = database
-            config.CONFIG['mssql_import']['username'] = username
-            config.CONFIG['mssql_import']['password'] = password
+            original_config = settings.CONFIG['mssql_import'].copy()
+            settings.CONFIG['mssql_import']['server'] = server
+            settings.CONFIG['mssql_import']['database'] = database
+            settings.CONFIG['mssql_import']['username'] = username
+            settings.CONFIG['mssql_import']['password'] = password
             
-            conn = enable_cdc.get_connection()
+            conn = enable_cdc_mod.get_connection()
             cursor = conn.cursor()
             
             # Load CREATE_STATEMENTS
@@ -691,18 +691,18 @@ def enable_cdc(server, database, username, password):
             tables = list(CREATE_STATEMENTS.keys())
             
             # Enable CDC on database
-            enable_cdc.enable_cdc_db(cursor)
+            enable_cdc_mod.enable_cdc_db(cursor)
             
             # Enable CDC on all tables
             for table in tables:
-                enable_cdc.enable_cdc_table(cursor, "dbo", table)
+                enable_cdc_mod.enable_cdc_table(cursor, "dbo", table)
             
             conn.commit()
             cursor.close()
             conn.close()
             
             # Restore original config
-            config.CONFIG['mssql_import'] = original_config
+            settings.CONFIG['mssql_import'] = original_config
             
             st.success(f"✅ CDC enabled successfully on database and {len(tables)} tables!")
             
@@ -715,13 +715,13 @@ def disable_cdc(server, database, username, password):
     with st.spinner("Disabling CDC..."):
         try:
             # Update config temporarily
-            original_config = config.CONFIG['mssql_import'].copy()
-            config.CONFIG['mssql_import']['server'] = server
-            config.CONFIG['mssql_import']['database'] = database
-            config.CONFIG['mssql_import']['username'] = username
-            config.CONFIG['mssql_import']['password'] = password
+            original_config = settings.CONFIG['mssql_import'].copy()
+            settings.CONFIG['mssql_import']['server'] = server
+            settings.CONFIG['mssql_import']['database'] = database
+            settings.CONFIG['mssql_import']['username'] = username
+            settings.CONFIG['mssql_import']['password'] = password
             
-            conn = enable_cdc.get_connection()
+            conn = enable_cdc_mod.get_connection()
             cursor = conn.cursor()
             
             # Load CREATE_STATEMENTS
@@ -730,17 +730,17 @@ def disable_cdc(server, database, username, password):
             
             # Disable CDC on all tables
             for table in tables:
-                enable_cdc.disable_cdc_table(cursor, "dbo", table)
+                enable_cdc_mod.disable_cdc_table(cursor, "dbo", table)
             
             # Disable CDC on database
-            enable_cdc.disable_cdc_db(cursor)
+            enable_cdc_mod.disable_cdc_db(cursor)
             
             conn.commit()
             cursor.close()
             conn.close()
             
             # Restore original config
-            config.CONFIG['mssql_import'] = original_config
+            settings.CONFIG['mssql_import'] = original_config
             
             st.success(f"✅ CDC disabled successfully on {len(tables)} tables and database!")
             
@@ -763,12 +763,12 @@ def show_cdc_simulation_page():
     col1, col2 = st.columns(2)
     
     with col1:
-        server = st.text_input("Server", value=config.CONFIG['mssql_import']['server'], key="sim_server")
-        database = st.text_input("Database", value=config.CONFIG['mssql_import']['database'], key="sim_database")
+        server = st.text_input("Server", value=settings.CONFIG['mssql_import']['server'], key="sim_server")
+        database = st.text_input("Database", value=settings.CONFIG['mssql_import']['database'], key="sim_database")
     
     with col2:
-        username = st.text_input("Username", value=config.CONFIG['mssql_import']['username'], key="sim_username")
-        password = st.text_input("Password", type="password", value=config.CONFIG['mssql_import']['password'], key="sim_password")
+        username = st.text_input("Username", value=settings.CONFIG['mssql_import']['username'], key="sim_username")
+        password = st.text_input("Password", type="password", value=settings.CONFIG['mssql_import']['password'], key="sim_password")
     
     st.markdown("---")
     
@@ -778,7 +778,7 @@ def show_cdc_simulation_page():
         "Number of Operations", 
         min_value=1, 
         max_value=1000, 
-        value=config.CONFIG['simulator']['default_num_operations'],
+        value=settings.CONFIG['simulator']['default_num_operations'],
         step=5
     )
     
@@ -797,7 +797,7 @@ def show_cdc_simulation_page():
     for i, op in enumerate(operations):
         col = [col1, col2, col3][i % 3]
         with col:
-            default_weight = config.CONFIG['simulator']['operation_weights'].get(op, 0.08)
+            default_weight = settings.CONFIG['simulator']['operation_weights'].get(op, 0.08)
             operation_weights[op] = st.slider(
                 op.replace('_', ' ').title(),
                 0.0, 1.0,
@@ -820,8 +820,8 @@ def run_cdc_simulation(server, database, username, password, num_operations, ope
     
     try:
         # Update simulator config
-        config.CONFIG['simulator']['default_num_operations'] = num_operations
-        config.CONFIG['simulator']['operation_weights'] = operation_weights
+        settings.CONFIG['simulator']['default_num_operations'] = num_operations
+        settings.CONFIG['simulator']['operation_weights'] = operation_weights
         
         simulator = CDCDataSimulator(server, database, username, password)
         
