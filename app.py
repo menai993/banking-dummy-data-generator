@@ -27,7 +27,7 @@ from main import (
     CustomerGenerator, AccountGenerator, CardGenerator, TransactionGenerator,
     BranchGenerator, EmployeeGenerator, LoanGenerator, MerchantGenerator,
     AuditLogGenerator, ExchangeRateGenerator, InvestmentAccountGenerator,
-    FraudAlertGenerator, UserLoginGenerator
+    FraudAlertGenerator, UserLoginGenerator, generate_bad_data_report
 )
 from utils.helpers import DataExporter
 from import_to_mssql import MSSQLImporter
@@ -85,6 +85,10 @@ if 'generated_data' not in st.session_state:
     st.session_state.generated_data = None
 if 'import_stats' not in st.session_state:
     st.session_state.import_stats = None
+if 'bad_data_report' not in st.session_state:
+    st.session_state.bad_data_report = None
+if 'bad_data_report_path' not in st.session_state:
+    st.session_state.bad_data_report_path = None
 
 def main():
     # Sidebar navigation
@@ -359,7 +363,8 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
         fraud_gen = FraudAlertGenerator(
             settings.CONFIG.get("fraud_alerts_per_transaction", 0.05),
             bad_data_config['fraud_alerts'],
-            transactions
+            transactions,
+            accounts
         )
         fraud_alerts = fraud_gen.generate()
         all_data['fraud_alerts'] = fraud_alerts
@@ -389,10 +394,10 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
         if "csv" in output_formats:
             for table_name, data in all_data.items():
                 if data:
-                    exporter.export_to_csv(data, f"{table_name}.csv")
+                    exporter.export_to_csv(data, f"{table_name}.csv", output_dir=output_directory)
         
         if "sql" in output_formats:
-            exporter.export_to_sql_files(all_data)
+            exporter.export_to_sql_files(all_data, output_dir=os.path.join(output_directory, "sql"))
         
         if "excel" in output_formats:
             clean_data = {}
@@ -402,7 +407,16 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
                     clean_record = {k: v for k, v in record.items() if k not in ['is_bad_data', 'bad_data_type']}
                     clean_records.append(clean_record)
                 clean_data[table_name] = clean_records
-            exporter.export_to_excel(clean_data)
+            exporter.export_to_excel(clean_data, output_dir=output_directory)
+
+        # Generate bad data report (same structure as main.py)
+        report_path = generate_bad_data_report(all_data, output_dir=output_directory)
+        st.session_state.bad_data_report_path = report_path
+        try:
+            with open(report_path, "r", encoding="utf-8") as f:
+                st.session_state.bad_data_report = json.load(f)
+        except Exception:
+            st.session_state.bad_data_report = None
         
         # Calculate statistics
         total_records = sum(len(data) for data in all_data.values() if data)
@@ -436,6 +450,25 @@ def generate_data(num_customers, num_branches, num_employees, num_merchants,
                 })
         
         st.dataframe(pd.DataFrame(stats_data), use_container_width=True)
+
+        # Display bad data report JSON
+        st.markdown("### 🧾 Bad Data Report")
+        report_obj = st.session_state.bad_data_report
+        report_path = st.session_state.bad_data_report_path
+
+        if report_obj:
+            if report_path:
+                st.caption(f"Saved to: {report_path}")
+            st.json(report_obj)
+            st.download_button(
+                "⬇️ Download bad_data_report.json",
+                data=json.dumps(report_obj, indent=2, ensure_ascii=False),
+                file_name="bad_data_report.json",
+                mime="application/json",
+                use_container_width=True,
+            )
+        else:
+            st.info("Bad data report was not available to display. If generation succeeded, check the output folder for bad_data_report.json.")
         
         # Display output files
         st.markdown("### 📁 Generated Files")
@@ -469,6 +502,11 @@ def show_mssql_import_page():
                                      value=settings.CONFIG['mssql_import']['batch_size'], step=100)
     
     create_views = st.checkbox("Create Database Views", value=settings.CONFIG['mssql_import']['create_views'])
+    recreate_tables = st.checkbox(
+        "Drop & Recreate Tables Before Import",
+        value=True,
+        help="Recommended. Prevents PRIMARY KEY conflicts when importing multiple times by dropping and recreating all tables first."
+    )
     
     st.markdown("---")
     
@@ -486,7 +524,7 @@ def show_mssql_import_page():
     with col3:
         if st.button("📥 Import Data", type="primary", use_container_width=True):
             import_data_to_mssql(server, database, username, password, data_directory, 
-                                batch_size, create_views)
+                                batch_size, create_views, recreate_tables)
 
 def test_database_connection(server, database, username, password):
     """Test database connection"""
@@ -512,7 +550,7 @@ def create_database_tables(server, database, username, password):
             st.code(str(e))
 
 def import_data_to_mssql(server, database, username, password, data_directory, 
-                         batch_size, create_views):
+                         batch_size, create_views, recreate_tables=True):
     """Import data to MSSQL with progress tracking"""
     
     progress_bar = st.progress(0)
@@ -520,6 +558,11 @@ def import_data_to_mssql(server, database, username, password, data_directory,
     
     try:
         importer = MSSQLImporter(server, database, username, password)
+
+        if recreate_tables:
+            status_text.text("Dropping & recreating tables...")
+            progress_bar.progress(0.02)
+            importer.create_tables_with_bad_data_tracking()
         
         # Define files to import
         files_to_import = [
@@ -791,7 +834,8 @@ def show_cdc_simulation_page():
     operations = [
         'INSERT_CUSTOMER', 'UPDATE_CUSTOMER', 'INSERT_ACCOUNT', 'UPDATE_ACCOUNT',
         'INSERT_TRANSACTION', 'UPDATE_TRANSACTION', 'INSERT_CARD', 'UPDATE_CARD',
-        'INSERT_LOAN', 'UPDATE_LOAN', 'INSERT_FRAUD_ALERT', 'INSERT_LOGIN'
+        'INSERT_LOAN', 'UPDATE_LOAN', 'DELETE_CUSTOMER_DETAIL',
+        'INSERT_FRAUD_ALERT', 'INSERT_LOGIN', 'DELETE_FRAUD_ALERT', 'DELETE_USER_LOGIN'
     ]
     
     for i, op in enumerate(operations):
@@ -848,8 +892,11 @@ def run_cdc_simulation(server, database, username, password, num_operations, ope
             ('UPDATE_CARD', operation_weights['UPDATE_CARD'], simulator.update_card_status),
             ('INSERT_LOAN', operation_weights['INSERT_LOAN'], simulator.insert_loan),
             ('UPDATE_LOAN', operation_weights['UPDATE_LOAN'], simulator.update_loan_status),
+            ('DELETE_CUSTOMER_DETAIL', operation_weights['DELETE_CUSTOMER_DETAIL'], simulator.delete_customer_detail),
             ('INSERT_FRAUD_ALERT', operation_weights['INSERT_FRAUD_ALERT'], simulator.insert_fraud_alert),
             ('INSERT_LOGIN', operation_weights['INSERT_LOGIN'], simulator.insert_user_login),
+            ('DELETE_FRAUD_ALERT', operation_weights['DELETE_FRAUD_ALERT'], simulator.delete_fraud_alert),
+            ('DELETE_USER_LOGIN', operation_weights['DELETE_USER_LOGIN'], simulator.delete_user_login),
         ]
         
         for i in range(num_operations):

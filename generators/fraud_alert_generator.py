@@ -7,10 +7,16 @@ from constants.fraud_constants import (
 from utils.helpers import BadDataGenerator  # Import at top level
 
 class FraudAlertGenerator:
-    def __init__(self, fraud_rate=0.05, bad_data_percentage=0.0, transactions=None):
+    def __init__(self, fraud_rate=0.05, bad_data_percentage=0.0, transactions=None, accounts=None):
         self.fraud_rate = fraud_rate
         self.bad_data_percentage = bad_data_percentage
         self.transactions = transactions or []
+        self.accounts = accounts or []
+        self._account_to_customer = {
+            acc.get("account_id"): acc.get("customer_id")
+            for acc in self.accounts
+            if acc and acc.get("account_id")
+        }
         self.fraud_alerts = []
         
     def introduce_bad_data_fraud(self, alert):
@@ -147,8 +153,13 @@ class FraudAlertGenerator:
             
             # Get transaction and account IDs
             transaction_id = transaction.get('transaction_id', next_alert_id)
-            account_id = transaction.get('account_id', random.randint(1, 100))
-            customer_id = transaction.get('customer_id', random.randint(1, 1000))
+            account_id = transaction.get('account_id')
+
+            # Derive customer_id from the account mapping (transactions do not carry customer_id)
+            # If we cannot resolve it, keep NULL to avoid foreign key violations.
+            customer_id = None
+            if account_id is not None:
+                customer_id = self._account_to_customer.get(account_id)
             
             alert = {
                 "alert_id": next_alert_id,
@@ -197,6 +208,8 @@ def generate_fraud_alert(transaction_id, account_id, customer_id):
         "amount": random.uniform(10, 20000)
     }
     # Force at least one alert for this shim by setting fraud_rate=1.0
-    gen = FraudAlertGenerator(fraud_rate=1.0, transactions=[transaction])
+    # Provide a minimal accounts mapping so customer_id can be resolved correctly
+    accounts = [{"account_id": account_id, "customer_id": customer_id}]
+    gen = FraudAlertGenerator(fraud_rate=1.0, transactions=[transaction], accounts=accounts)
     alerts = gen.generate()
     return alerts[0] if alerts else None

@@ -108,7 +108,7 @@ CONFIG["output_directory"] = "output"
 **Launch the Streamlit web interface for easy access to all features:**
 
 ```bash
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
 The web UI will open in your browser at `http://localhost:8501` and provides:

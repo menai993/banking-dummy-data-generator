@@ -44,9 +44,9 @@ CONFIG = {
     # MSSQL import config (example, should be customized)
     "mssql_import": {
         "server": "localhost",
-        "database": "transactionaldb",
-        "username": "pytonusr",
-        "password": "pytonusr",
+        "database": "YourDatabase",
+        "username": "YourUsername",
+        "password": "YourPassword",
         "batch_size": 1000,
         "override_batch_size_based_on_file_size": True,
         "data_directory": "output",

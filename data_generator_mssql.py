@@ -339,6 +339,38 @@ class CDCDataSimulator:
         if result:
             print(f"  ❌ Deleted customer detail: {detail_id}")
         return result
+
+    def delete_fraud_alert(self) -> bool:
+        """Delete a fraud alert record (child table; safe for FK constraints)"""
+        self.cursor.execute("SELECT TOP 50 alert_id FROM fraud_alerts")
+        alert_ids = [row[0] for row in self.cursor.fetchall()]
+
+        if not alert_ids:
+            return False
+
+        alert_id = random.choice(alert_ids)
+        query = f"DELETE FROM fraud_alerts WHERE alert_id = {alert_id}"
+
+        result = self.execute_operation('DELETE_FRAUD_ALERT', query)
+        if result:
+            print(f"  ❌ Deleted fraud alert: {alert_id}")
+        return result
+
+    def delete_user_login(self) -> bool:
+        """Delete a user login record (child table; safe for FK constraints)"""
+        self.cursor.execute("SELECT TOP 50 login_id FROM user_logins")
+        login_ids = [row[0] for row in self.cursor.fetchall()]
+
+        if not login_ids:
+            return False
+
+        login_id = random.choice(login_ids)
+        query = f"DELETE FROM user_logins WHERE login_id = {login_id}"
+
+        result = self.execute_operation('DELETE_USER_LOGIN', query)
+        if result:
+            print(f"  ❌ Deleted user login: {login_id}")
+        return result
     
     def insert_fraud_alert(self) -> bool:
         """Insert fraud alert for transaction"""
@@ -419,8 +451,11 @@ class CDCDataSimulator:
             ('UPDATE_CARD', self.update_card_status),
             ('INSERT_LOAN', self.insert_loan),
             ('UPDATE_LOAN', self.update_loan_status),
+            ('DELETE_CUSTOMER_DETAIL', self.delete_customer_detail),
             ('INSERT_FRAUD_ALERT', self.insert_fraud_alert),
             ('INSERT_LOGIN', self.insert_user_login),
+            ('DELETE_FRAUD_ALERT', self.delete_fraud_alert),
+            ('DELETE_USER_LOGIN', self.delete_user_login),
         ]
 
         operations = []

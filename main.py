@@ -231,7 +231,8 @@ def main():
     fraud_gen = FraudAlertGenerator(
         settings.CONFIG.get("fraud_alerts_per_transaction", 0.05),
         settings.CONFIG["bad_data_percentage"]["fraud_alerts"],
-        transactions
+        transactions,
+        accounts
     )
     fraud_alerts = fraud_gen.generate()
 
