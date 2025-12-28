@@ -154,6 +154,39 @@ Generated 1000 customers (200 bad records)
 
 ---
 
+### 4️⃣ Run Tests
+
+The project includes comprehensive unit tests using pytest.
+
+```bash
+# Install test dependencies (if not already installed)
+pip install -r requirements.txt
+
+# Run all tests
+pytest tests/
+
+# Run tests with verbose output
+pytest tests/ -v
+
+# Run tests with coverage report
+pytest tests/ --cov=. --cov-report=html
+
+# Run specific test file
+pytest tests/test_customer_generator.py
+
+# Run specific test
+pytest tests/test_customer_generator.py::TestCustomerGenerator::test_generate_customers
+```
+
+Test coverage includes:
+- ✅ Configuration validation (`test_config.py`)
+- ✅ Customer generation (`test_customer_generator.py`)
+- ✅ Account generation (`test_account_generator.py`)
+- ✅ Helper utilities and bad data generation (`test_helpers.py`)
+- ✅ Main orchestration functions (`test_main.py`)
+
+---
+
 ## 📊 Generated Tables
 
 | Table | Description |
@@ -330,9 +363,23 @@ class CustomGenerator:
 ## 📋 Useful Commands
 
 ```bash
+# Generate data
 python main.py
+
+# Import to MSSQL
 python import_to_mssql.py
+
+# Run tests
+pytest tests/
+
+# Run tests with coverage
+pytest tests/ --cov=. --cov-report=html
+
+# Clean output files
 rm -rf output/*
+
+# Clean test artifacts
+rm -rf htmlcov/ .coverage .pytest_cache/
 ```
 
 ---

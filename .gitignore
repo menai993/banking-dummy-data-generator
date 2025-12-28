@@ -4,3 +4,18 @@ __pycache__/
 constants/__pycache__/
 generators/__pycache__/
 utils/__pycache__/
+tests/__pycache__/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
